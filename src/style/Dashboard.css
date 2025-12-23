@@ -1,0 +1,47 @@
+*{
+    margin: 0%;
+    border: 0%;
+}
+.q-pa-md{
+    padding: 0%;
+    
+}
+.contemC{
+    padding: 5%;
+ 
+}
+
+.q-toolbar{
+    background-color: var(--oneColor--);
+}
+.LSB{
+ margin: 15px;
+ width: 5%;
+}
+.box{
+    background:var(--threeColor--);
+    width: 320px;
+    height: 350px;
+    margin-top: 3%;
+    margin-left: 5%;
+    padding: 0;
+    box-shadow: rgb(26, 26, 26) 0px 0px 15px 1px;
+    border-radius:  12px ;
+}
+.encabesado{
+    background: var(--oneColor--);
+    color: var(--threeColor--);
+    width: 100%;
+    height: 95px;
+    border: none;
+    margin-top:-255px;
+    border-radius: 12px 12px 0px 0px;
+}
+.IMGP{
+    position:absolute;
+    margin-top: 25%;
+    max-width: 250px;
+}
+.nombreA{
+    margin-top: 20px;
+}

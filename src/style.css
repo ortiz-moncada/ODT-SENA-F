@@ -1,0 +1,50 @@
+:root{
+    /*Basic colors*/
+    --black--:#000000;
+    --white--:#FFFFFF;
+    --gray--:#BDBDBD;
+    --grayTwo--:#9E9E9E;
+;
+
+    /*Corporations colors*/
+    --oneColor--:#39A900;
+    --twoColor--:#2A7F00;
+    --threeColor--:#F5F5F5;
+
+    /*Alerts colors */
+    --fourColor--:#00FF00;
+    --fiveColor--:#FFF800;
+    --sixColor--:#FF9100;
+    --sevenColor--:#FF0000;
+
+    --eightColor--:#bae4a6;
+    --nineColor--:#ffd6d6;
+}
+
+body {
+  background: var(--threeColor--);
+    margin: 0%;
+  font-family: 'Carlito', sans-serif; /* Base */
+}
+
+h1 {
+  margin: 0;
+  font-family: 'Poppins', sans-serif; /* Reemplazo Century Gothic */
+  font-size: 44px !important;  /* usa px en lugar de pt */
+}
+
+h2 {
+    margin: 0%;
+  font-family: 'Montserrat'; /* Reemplazo de Gotham */
+  font-size: 27px !important;
+  font-weight: 700;
+}
+
+h3 {
+    margin: 0%;
+  font-family: 'Carlito', sans-serif; /* Reemplazo de Calibri */
+  font-size: 24px !important;
+  font-weight: 400;
+}
+
+
