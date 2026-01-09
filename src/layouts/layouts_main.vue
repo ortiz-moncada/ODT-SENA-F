@@ -14,8 +14,17 @@
         </q-toolbar-title>
       
          <P class="Ncom">ORGANIZADOR DE TAREAS</P>
+          <q-btn
+    flat
+    round
+    icon="notifications_none"
+    style="position: absolute; margin-left: 94%;"
+    @click="passNotify"
+  />
+  <span v-if="contador > 0" class="badge">
+    {{ contador > 9 ? '9+' : contador }}
+  </span>
         
-        <q-btn  flat round  icon="notifications_none" style="position: absolute; margin-left: 94%;" @click="passNotify"/>
 
         <img class="LSB" src="../IMG/logo-sena-blanco.png" alt="logoSena" />
       </q-toolbar>
@@ -133,8 +142,11 @@ const adminStore = useAdminStore();
 
 const drawer = ref(false);
 const modalPerfil = ref(false);
+const contador = ref(0);
 
-
+const nuevaNotificacion = () => {
+  contador.value++
+}
 const passNotify= () =>{
 router.push("/notify")
 } 

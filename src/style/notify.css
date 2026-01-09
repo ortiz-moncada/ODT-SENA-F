@@ -8,14 +8,19 @@
     border-radius: 10px;
      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
+.mInfo{
+margin-left: 11%
+}
 .tInfo{
-margin-top:2%;
+margin-top:0%;
 font-size:large;
-margin-left: 30%;
-display: block;
+margin-left: 2%;
+color: var(--oneColor--);
 
 }
-
+.alerts{
+  margin: 2%;
+}
 .contemAlerts{
     width: 80%;
     margin-left: 9%;
@@ -31,15 +36,20 @@ display: block;
 
 .alertCard {
   background: var(--White--);
-    box-shadow: rgb(6, 6, 6) 0px 0px 10px 0px;
-  border-left: 5px solid var(--oneColor--);
-   position: relative;
+  box-shadow: rgb(6, 6, 6) 0px 0px 10px 0px;
+  position: relative;
   padding: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 2%;
   border-radius: 6px;
-  width: 80%;
-  height: 150px;
-  margin-left: 10%; 
+  width: 70%;
+  height: 130px;
+  margin-left: 13%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.alertCard:hover {
+  transform: scale(1.03); /* crece un poco */
+/*   box-shadow: rgba(0, 0, 0, 0.25) 0px 8px 20px; */
 }
 
 .alertCard h4 {

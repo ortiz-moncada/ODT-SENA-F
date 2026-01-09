@@ -131,20 +131,45 @@ export async function getTasksByWorker(userId) {
 
 export async function postTasks(form) {
   try {
-    console.log(" tribute_id que estoy enviando al backend:", form.tribute_id);
+    // ✅ SI NO HAY ARCHIVOS, enviar JSON directo
+    if (!form.attached_files || form.attached_files.length === 0) {
+      const res = await api.post("/tasks/create", form, {
+        headers: {
+          ...getAuthHeaders().headers,
+          'Content-Type': 'application/json'
+        }
+      });
+      return res.data;
+    }
 
+    // ✅ SI HAY ARCHIVOS, usar FormData
     const formData = new FormData();
-
+    
     formData.append("name", form.name);
     formData.append("description", form.description);
     formData.append("tribute_id", form.tribute_id);
     formData.append("stateTask", form.stateTask);
-    formData.append("delivery_date", form.delivery_date);
     formData.append("area_id", form.area_id);
-
-    form.workers.forEach(w => formData.append("workers[]", w));
-
-    if (form.attached_files && form.attached_files.length > 0) {
+    formData.append("workers", JSON.stringify(form.workers));
+    
+    // ✅ isMonthly como string "true" o "false" (el backend lo normaliza)
+    formData.append("isMonthly", String(form.isMonthly));
+    
+    // ✅ SOLO agregar delivery_date si NO es mensual
+    if (!form.isMonthly && form.delivery_date) {
+      formData.append("delivery_date", form.delivery_date);
+    }
+    
+    // ✅ SOLO agregar monthlyDay si ES mensual
+    if (form.isMonthly && form.monthlyDay) {
+      formData.append("monthlyDay", String(form.monthlyDay));
+    }
+    
+    if (form.leader) {
+      formData.append("leader", form.leader);
+    }
+    
+    if (form.attached_files?.length) {
       form.attached_files.forEach(file => {
         formData.append("attached_files", file);
       });
@@ -152,18 +177,17 @@ export async function postTasks(form) {
 
     const res = await api.post("/tasks/create", formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
         ...getAuthHeaders().headers
       }
     });
 
     return res.data;
-
   } catch (error) {
     console.error("Error en postTasks:", error.response?.data || error);
     throw error;
   }
 }
+
 
 export async function getTasks() {
   try {
@@ -270,6 +294,7 @@ export async function getData() {
 }
 
 // NOTIFICACIONES
+
 export async function createNotification(notificationData) {
   try {
     const res = await api.post(
@@ -279,14 +304,21 @@ export async function createNotification(notificationData) {
     );
     return res.data;
   } catch (error) {
-    console.error("Error al crear notificación:", error.response?.data || error);
+    console.error(
+      "Error al crear notificación:",
+      error.response?.data || error
+    );
     throw error;
   }
 }
 
-export async function getNotifications() {
+
+export async function getNotifications(params = {}) {
   try {
-    const res = await api.get("/notify", getAuthHeaders());
+    const res = await api.get("/notify", {
+      params,                 // aquí van los filtros
+      ...getAuthHeaders()
+    });
     return res.data;
   } catch (error) {
     console.error("Error al obtener notificaciones:", error);
@@ -296,10 +328,27 @@ export async function getNotifications() {
 
 export async function deleteNotification(id) {
   try {
-    const res = await api.delete(`/notify/${id}`, getAuthHeaders());
+    const res = await api.delete(
+      `/notify/${id}`,
+      getAuthHeaders()
+    );
     return res.data;
   } catch (error) {
     console.error("Error al eliminar notificación:", error);
     throw error;
   }
 }
+
+export async function deleteNotifications(params = {}) {
+  try {
+    const res = await api.delete("/notify", {
+      params,               // rol, userId, areaId
+      ...getAuthHeaders()
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error al eliminar notificaciones:", error);
+    throw error;
+  }
+}
+
