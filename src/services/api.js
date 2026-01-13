@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  //baseURL: "http://localhost:4000",
-  baseURL: VITE_API_URL
+  //baseURL: import.meta.env.API_URL,
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 // Interceptor para agregar token solo en rutas protegidas
