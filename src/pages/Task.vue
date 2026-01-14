@@ -756,9 +756,9 @@ const obtenerTareas = async () => {
     let filtrarPorArea = false
 
     if (rolActual === 1) {
-      endpoint = VITE_API_URL/tasks/seeTasks
+      endpoint = `${ import.meta.env.VITE_API_URL}/tasks/seeTasks`
     } else if (rolActual === 2) {
-      endpoint = import.meta.env.VITE_API_URL/tasks/seeTasks
+      endpoint =`${ import.meta.env.VITE_API_URL}/tasks/seeTasks`
       filtrarPorArea = true
     } else if (rolActual === 3) {
       endpoint = `${import.meta.env.VITE_API_URL}/tasks/byWorker/${userId}`
@@ -785,8 +785,7 @@ const obtenerTareas = async () => {
 
 const obtenerTrabajadores = async () => {
   try {
-    const res = await axios.get(import.meta.env.VITE_API_URL/users/seeUsers, getAuthHeaders())
-
+    const res = await axios.get(`${import.meta.env.VITE_API_URL}/users/seeUsers`, getAuthHeaders())
     if (rol === 1) {
       workersList.value = res.data.filter(u => u.rol === 3 && u.state === 1)
     } else {
