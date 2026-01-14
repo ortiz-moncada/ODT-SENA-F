@@ -337,7 +337,7 @@ const obtenerAdmins = async () => {
       return
     }
 
-    const response = await axios.get('http://localhost:4000/users/seeUsers', {
+    const response = await axios.get(import.meta.env.VITE_API_URL/tasks/byWorker/users/seeUsers, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

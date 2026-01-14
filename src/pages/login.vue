@@ -97,7 +97,7 @@ const enviarCorreo = async () => {
   loading.value = true;
 
   try {
-    await axios.post("http://localhost:4000/api/email/restablecer", {
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/email/restablecer`, {
       to: correoRecuperar.value,
       subject: "Restablecimiento de contraseña",
     });

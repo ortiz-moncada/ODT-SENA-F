@@ -313,7 +313,7 @@
           <q-td :props="props">
             <div v-if="props.row.attached_files?.length">
               <div v-for="(file, index) in props.row.attached_files" :key="index">
-                <a :href="file.url || `http://localhost:4000/${file.path}`" target="_blank"
+                <a :href="file.url || `${import.meta.env.VITE_API_URL}/tasks/byWorker/${file.path}`" target="_blank"
                   style="color: blue; cursor: pointer;">
                   {{ file.name || `Archivo ${index + 1}` }}
                 </a>
@@ -491,7 +491,7 @@ const entregarTareaWorker = async () => {
 
     // Enviar al backend
     await axios.post(
-      `http://localhost:4000/tasks/entregar/${tareaEntrega.value._id}`,
+      `${import.meta.env.VITE_API_URL}/${tareaEntrega.value._id}`,
       formData,
       {
         headers: {
@@ -756,12 +756,12 @@ const obtenerTareas = async () => {
     let filtrarPorArea = false
 
     if (rolActual === 1) {
-      endpoint = 'http://localhost:4000/tasks/seeTasks'
+      endpoint = VITE_API_URL/tasks/seeTasks
     } else if (rolActual === 2) {
-      endpoint = 'http://localhost:4000/tasks/seeTasks'
+      endpoint = import.meta.env.VITE_API_URL/tasks/seeTasks
       filtrarPorArea = true
     } else if (rolActual === 3) {
-      endpoint = `http://localhost:4000/tasks/byWorker/${userId}`
+      endpoint = `${import.meta.env.VITE_API_URL}/tasks/byWorker/${userId}`
     }
 
     const res = await axios.get(endpoint, getAuthHeaders())
@@ -785,7 +785,7 @@ const obtenerTareas = async () => {
 
 const obtenerTrabajadores = async () => {
   try {
-    const res = await axios.get('http://localhost:4000/users/seeUsers', getAuthHeaders())
+    const res = await axios.get(import.meta.env.VITE_API_URL/users/seeUsers, getAuthHeaders())
 
     if (rol === 1) {
       workersList.value = res.data.filter(u => u.rol === 3 && u.state === 1)
