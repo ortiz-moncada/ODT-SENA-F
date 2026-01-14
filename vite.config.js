@@ -18,6 +18,23 @@ export default defineConfig({
       sassVariables: fileURLToPath(
         new URL('./src/quasar-variables.sass', import.meta.url)
       )
-    })
+    }),
+
+    // Plugin para copiar _redirects al build
+    {
+      name: 'copy-redirects',
+      closeBundle() {
+        const fs = require('fs')
+        const path = require('path')
+        
+        const source = path.resolve(__dirname, 'public/_redirects')
+        const destination = path.resolve(__dirname, 'dist/_redirects')
+        
+        if (fs.existsSync(source)) {
+          fs.copyFileSync(source, destination)
+          console.log('✅ _redirects copiado a dist/')
+        }
+      }
+    }
   ]
 })
