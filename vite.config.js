@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
+import { copyFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -24,15 +26,14 @@ export default defineConfig({
     {
       name: 'copy-redirects',
       closeBundle() {
-        const fs = require('fs')
-        const path = require('path')
+        const source = resolve(process.cwd(), 'public/_redirects')
+        const destination = resolve(process.cwd(), 'dist/_redirects')
         
-        const source = path.resolve(__dirname, 'public/_redirects')
-        const destination = path.resolve(__dirname, 'dist/_redirects')
-        
-        if (fs.existsSync(source)) {
-          fs.copyFileSync(source, destination)
+        if (existsSync(source)) {
+          copyFileSync(source, destination)
           console.log('✅ _redirects copiado a dist/')
+        } else {
+          console.warn('⚠️ No se encontró public/_redirects')
         }
       }
     }
