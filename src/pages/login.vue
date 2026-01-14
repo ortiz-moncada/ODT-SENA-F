@@ -55,206 +55,105 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import router from "../router/index.js";
+import { useRouter } from "vue-router"; 
 import { useAdminStore } from "../store/administrador.js";
-import axios from "axios";
 import { Notify } from "quasar";
+import api from '../services/api.js'; 
 
+const router = useRouter();
 const adminStore = useAdminStore();
 
 const gmail = ref("");
 const password = ref("");
-const state = ref("");
 const isPwd = ref(true);
 const correoRecuperar = ref("");
 const modalRecuperar = ref(false);
 const loading = ref(false);
 
-onMounted(() => {
-  window.addEventListener("keydown", handleEnter);
-});
+// Manejo de teclado
+const handleEnter = (event) => {
+  if (event.key === "Enter") pasarUsuario();
+};
 
-onBeforeUnmount(() => {
-  window.removeEventListener("keydown", handleEnter);
-});
+onMounted(() => window.addEventListener("keydown", handleEnter));
+onBeforeUnmount(() => window.removeEventListener("keydown", handleEnter));
 
-function handleEnter(event) {
-  if (event.key === "Enter") {
-    pasarUsuario();
-  }
-}
-
+/**
+ * ENVIAR CORREO
+ */
 const enviarCorreo = async () => {
   if (!correoRecuperar.value) {
-    Notify.create({
-      position: "top",
-      type: "warning",
-      message: "Por favor ingrese su correo electrónico",
-    });
-    return;
+    return Notify.create({ position: "top", type: "warning", message: "Ingrese su correo electrónico" });
   }
 
   loading.value = true;
-
   try {
-    await axios.post(`${import.meta.env.VITE_API_URL}/api/email/restablecer`, {
+    await api.post('/api/email/restablecer', {
       to: correoRecuperar.value,
       subject: "Restablecimiento de contraseña",
     });
 
-    Notify.create({
-      position: "top",
-      type: "positive",
-      message: "Correo de restablecimiento enviado correctamente",
-    });
-
+    Notify.create({ position: "top", type: "positive", message: "Correo enviado correctamente" });
     cerrarModal();
   } catch (error) {
-    Notify.create({
-      position: "top",
-      type: "negative",
-      message: "Error al enviar el correo",
-    });
+    Notify.create({ position: "top", type: "negative", message: "Error al enviar el correo" });
   } finally {
     loading.value = false;
   }
 };
 
+/**
+ * LOGIN PRINCIPAL
+ */
 async function pasarUsuario() {
+  if (!gmail.value || !password.value) {
+    return Notify.create({ position: "top", type: "negative", message: "Complete todos los campos" });
+  }
+
   try {
-    if (!gmail.value || !password.value) {
-      Notify.create({
-        position: "top",
-        type: "negative",
-        message: "Por favor complete todos los campos",
-      });
-      return;
-    }
+    // El Store debe estar usando la instancia 'api' internamente
+    const response = await adminStore.inicio(gmail.value.trim(), password.value.trim());
+    
+    const user = response?.data?.user;
+    if (!user) throw new Error("Respuesta inválida del servidor");
 
-    const cleanGmail = gmail.value.trim();
-    const cleanPassword = password.value.trim();
-
-    const response = await adminStore.inicio(cleanGmail, cleanPassword);
-
-    if (!response?.data?.user) {
-      Notify.create({
-        position: "top",
-        type: "negative",
-        message: "Error en la respuesta del servidor",
-      });
-      return;
-    }
-
-    const user = response.data.user;
-    console.log("👤 Usuario recibido del backend:", user);
-
-    // ✅ VALIDACIÓN DE USUARIO INACTIVO
-    if (user.state === 2) {
-      console.warn("⚠️ Usuario inactivo intentando iniciar sesión:", user.names);
-      
-      Notify.create({
-        position: "top",
-        type: "negative",
-        message: "Usuario inactivo. Contacte al administrador para activar su cuenta.",
-        timeout: 4000,
-        icon: "block",
-        color: "negative"
-      });
-
-      limpiarFormulario();
-      return; // Detener el proceso de login
-    }
-
-    // ✅ VALIDACIÓN ADICIONAL: Si state no es 1 (activo)
+    // Validar estado
     if (user.state !== 1) {
-      console.warn("⚠️ Usuario con estado inválido:", user.state);
-      
-      Notify.create({
-        position: "top",
-        type: "warning",
-        message: "Estado de usuario inválido. Contacte al administrador.",
-        timeout: 4000,
-        icon: "warning"
-      });
-
+      const msg = user.state === 2 ? "Usuario inactivo" : "Estado inválido";
+      Notify.create({ position: "top", type: "negative", message: msg, icon: "block" });
       limpiarFormulario();
       return;
     }
 
-    // ✅ Usuario ACTIVO - Continuar con el login normal
-    console.log("✅ Usuario activo, procediendo con el login");
-
-    // GUARDAR ÁREA CORRECTAMENTE (soporta ambos campos)
+    // Guardar en LocalStorage
     const areaId = user.area_id || user.areaId || "";
-    console.log("📍 AreaId a guardar:", areaId);
-
-    localStorage.setItem("areaId", areaId);
     localStorage.setItem("token", response.data.token || "");
     localStorage.setItem("userId", user._id || "");
     localStorage.setItem("rol", user.rol?.toString() || "");
     localStorage.setItem("names", user.names || "");
-    localStorage.setItem("state", user.state?.toString() || "1");
+    localStorage.setItem("areaId", areaId);
 
-    console.log("💾 Datos guardados en localStorage:");
-    console.log("  - areaId:", localStorage.getItem("areaId"));
-    console.log("  - userId:", localStorage.getItem("userId"));
-    console.log("  - rol:", localStorage.getItem("rol"));
-    console.log("  - state:", localStorage.getItem("state"));
-
-    Notify.create({
-      position: "top",
-      type: "positive",
+    Notify.create({ 
+      position: "top", 
+      type: "positive", 
       message: "Bienvenido " + user.names,
-      icon: "check_circle",
-      timeout: 2000
+      timeout: 2000 
     });
 
     limpiarFormulario();
-
     router.push({ name: "dashboard" });
 
   } catch (error) {
-    console.error("❌ Error completo:", error);
+    console.error("❌ Error Login:", error);
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || "Error de conexión con el servidor";
     
-    // Manejar error específico de usuario inactivo desde el backend
-    if (error.response?.data?.error === "Usuario inactivo") {
-      Notify.create({
-        position: "top",
-        type: "negative",
-        message: "Usuario inactivo. Contacte al administrador para activar su cuenta.",
-        timeout: 4000,
-        icon: "block"
-      });
-      limpiarFormulario();
-      return;
-    }
-
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      "Error al iniciar sesión. Verifica tus credenciales.";
-
-    Notify.create({
-      position: "top",
-      type: "negative",
-      message: errorMessage,
-    });
+    Notify.create({ position: "top", type: "negative", message: errorMessage });
   }
 }
 
-const limpiarFormulario = () => {
-  password.value = "";
-  gmail.value = "";
-};
-
-function abrirModal() {
-  modalRecuperar.value = true;
-}
-
-function cerrarModal() {
-  modalRecuperar.value = false;
-  correoRecuperar.value = "";
-}
+const limpiarFormulario = () => { password.value = ""; gmail.value = ""; };
+const abrirModal = () => modalRecuperar.value = true;
+const cerrarModal = () => { modalRecuperar.value = false; correoRecuperar.value = ""; };
 </script>
 
 <style scoped>
