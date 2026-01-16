@@ -3,7 +3,7 @@
     <div class="contemLogin">
       <div class="design">
         <h1 class="titleImportant">ODT</h1>
-        <P class="Ncom">ORGANIZADOR DE TAREAS</P>
+        <p class="Ncom">ORGANIZADOR DE TAREAS</p>
       </div>
 
       <div class="questions">
@@ -11,25 +11,38 @@
         <br />
         <h2 class="title">LOGIN</h2>
 
-        <!-- Usuario -->
-        <q-input class="inpt" filled v-model="gmail" label="Tu Usuario"  />
+        <q-input class="inpt" filled v-model="gmail" label="Tu Usuario" @keydown.enter="pasarUsuario" />
         <br />
 
-        <!-- Contraseña -->
-        <q-input class="inpt2" v-model="password" filled :type="isPwd ? 'password' : 'text' " label="Tu Contraseña">
+        <q-input 
+          class="inpt2" 
+          v-model="password" 
+          filled 
+          :type="isPwd ? 'password' : 'text'" 
+          label="Tu Contraseña"
+          @keydown.enter="pasarUsuario"
+        >
           <template v-slot:append>
-            <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwd = !isPwd" />
+            <q-icon 
+              :name="isPwd ? 'visibility_off' : 'visibility'" 
+              class="cursor-pointer" 
+              @click="isPwd = !isPwd" 
+            />
           </template>
         </q-input>
         <br />
 
         <p class="RC" @click="abrirModal()">¿Olvidaste tu contraseña?</p>
 
-        <q-btn :loading="adminStore.loading" class="button" @click="pasarUsuario" label="Ingresar" />
+        <q-btn 
+          :loading="adminStore.loading" 
+          class="button" 
+          @click="pasarUsuario" 
+          label="Ingresar" 
+        />
       </div>
     </div>
 
-    <!-- MODAL RESTABLECER CONTRASEÑA -->
     <div v-if="modalRecuperar" class="overlay"></div>
     <div v-if="modalRecuperar" class="modal">
       <div class="modal-header">
@@ -42,12 +55,25 @@
         <p class="textInfo">
           Para restablecer tu contraseña te enviaremos un correo electrónico.
         </p>
-        <q-input filled v-model="correoRecuperar" label="Correo electrónico" type="email" clearable class="input-modal" />
+        <q-input 
+          filled 
+          v-model="correoRecuperar" 
+          label="Correo electrónico" 
+          type="email" 
+          clearable 
+          class="input-modal" 
+        />
       </div>
 
       <div class="modal-actions">
         <q-btn flat class="closeBTN" label="CERRAR" @click="cerrarModal" />
-        <q-btn class="openBTN" label="SIGUIENTE" icon-right="arrow_forward" :loading="loading" @click="enviarCorreo" />
+        <q-btn 
+          class="openBTN" 
+          label="SIGUIENTE" 
+          icon-right="arrow_forward" 
+          :loading="loading" 
+          @click="enviarCorreo" 
+        />
       </div>
     </div>
   </div>
@@ -70,7 +96,7 @@ const correoRecuperar = ref("");
 const modalRecuperar = ref(false);
 const loading = ref(false);
 
-// Manejo de teclado
+// Manejo de teclado (opcional si ya usas @keydown.enter en q-input)
 const handleEnter = (event) => {
   if (event.key === "Enter") pasarUsuario();
 };
@@ -78,21 +104,16 @@ const handleEnter = (event) => {
 onMounted(() => window.addEventListener("keydown", handleEnter));
 onBeforeUnmount(() => window.removeEventListener("keydown", handleEnter));
 
-/**
- * ENVIAR CORREO
- */
 const enviarCorreo = async () => {
   if (!correoRecuperar.value) {
     return Notify.create({ position: "top", type: "warning", message: "Ingrese su correo electrónico" });
   }
-
   loading.value = true;
   try {
-    await api.post('/api/email/restablecer', {
+    await api.post('/users/correo', { // Ajustado a tu ruta de correo
       to: correoRecuperar.value,
       subject: "Restablecimiento de contraseña",
     });
-
     Notify.create({ position: "top", type: "positive", message: "Correo enviado correctamente" });
     cerrarModal();
   } catch (error) {
@@ -102,36 +123,42 @@ const enviarCorreo = async () => {
   }
 };
 
-/**
- * LOGIN PRINCIPAL
- */
 async function pasarUsuario() {
   if (!gmail.value || !password.value) {
     return Notify.create({ position: "top", type: "negative", message: "Complete todos los campos" });
   }
 
   try {
-    // El Store debe estar usando la instancia 'api' internamente
-    const response = await adminStore.inicio(gmail.value.trim(), password.value.trim());
+    // 1. Llamar al login
+    const response = await adminStore.inicio({
+      gmail: gmail.value.trim(),
+      password: password.value.trim()
+    });
     
-    const user = response?.data?.user;
-    if (!user) throw new Error("Respuesta inválida del servidor");
+    // 2. Extraer datos de la respuesta (ajustar según la estructura de tu backend)
+    const token = response.token;
+    const user = response.user;
 
-    // Validar estado
-    if (user.state !== 1) {
-      const msg = user.state === 2 ? "Usuario inactivo" : "Estado inválido";
-      Notify.create({ position: "top", type: "negative", message: msg, icon: "block" });
+    if (!token || !user) throw new Error("Respuesta inválida del servidor");
+
+    // 3. Validar estado (1 = Activo)
+    if (Number(user.state) !== 1) {
+      Notify.create({ 
+        position: "top", 
+        type: "negative", 
+        message: "Usuario inactivo. Contacte al administrador.", 
+        icon: "block" 
+      });
       limpiarFormulario();
       return;
     }
 
-    // Guardar en LocalStorage
-    const areaId = user.area_id || user.areaId || "";
-    localStorage.setItem("token", response.data.token || "");
+    // 4. GUARDAR TODO EN LOCALSTORAGE (Importante el orden)
+    localStorage.setItem("token", token);
     localStorage.setItem("userId", user._id || "");
     localStorage.setItem("rol", user.rol?.toString() || "");
     localStorage.setItem("names", user.names || "");
-    localStorage.setItem("areaId", areaId);
+    localStorage.setItem("areaId", user.area_id || "");
 
     Notify.create({ 
       position: "top", 
@@ -141,12 +168,13 @@ async function pasarUsuario() {
     });
 
     limpiarFormulario();
+    
+    // 5. Redirigir
     router.push({ name: "dashboard" });
 
   } catch (error) {
     console.error("❌ Error Login:", error);
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || "Error de conexión con el servidor";
-    
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || "Error al iniciar sesión";
     Notify.create({ position: "top", type: "negative", message: errorMessage });
   }
 }

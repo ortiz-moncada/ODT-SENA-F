@@ -1,24 +1,45 @@
 import axios from "axios";
-export const VITE_API_URL = import.meta.env.VITE_API_URL;
+export const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
-  baseURL: VITE_API_URL,
+  baseURL: API_URL,  
 });
 
 // Interceptor para agregar token solo en rutas protegidas
 api.interceptors.request.use(
   (config) => {
+    // Lista de rutas que NO necesitan token
     const publicRoutes = ['/users/login', '/users/register', '/users/correo', '/users/reset-password'];
     
     // Verificar si la ruta actual es pública
-    const isPublicRoute = publicRoutes.some(route => config.url && config.url.includes(route));
+    const isPublicRoute = publicRoutes.some(route => config.url.includes(route));
     
+    // Solo agregar token si NO es una ruta pública
     if (!isPublicRoute) {
       const token = localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    
+    // ✅ Si es FormData, NO establecer Content-Type
+    // Axios lo hará automáticamente con el boundary correcto
+    if (config.data instanceof FormData) {
+      // NO hacer nada, dejar que axios maneje el Content-Type
+      // Importante: NO usar delete, simplemente no tocar
+    } else {
+      // Para otros tipos de datos, asegurar que tenga el Content-Type correcto
+      if (!config.headers['Content-Type']) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+    }
+    
+    console.log("Request config:", {
+      url: config.url,
+      hasAuth: !!config.headers.Authorization,
+      isFormData: config.data instanceof FormData,
+      contentType: config.headers['Content-Type']
+    });
     
     return config;
   },
@@ -27,15 +48,17 @@ api.interceptors.request.use(
   }
 );
 
+// Interceptor para respuestas
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
     console.error("❌ Response error:", error.response?.data);
     return Promise.reject(error);
   }
 );
 
-// Mantenemos esto por si lo usas en otros lados, aunque el interceptor ya lo hace
 export const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {

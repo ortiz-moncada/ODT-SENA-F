@@ -271,7 +271,7 @@
           <q-td :props="props">
             <div v-if="props.row.attached_files?.length">
               <div v-for="(file, index) in props.row.attached_files" :key="index">
-                <a :href="file.url || `${VITE_API_URL}/tasks/byWorker/${file.path}`" target="_blank"
+                <a :href="file.url || `${API_URL}/tasks/byWorker/${file.path}`" target="_blank"
                   style="color: blue; cursor: pointer;">
                   {{ file.name || `Archivo ${index + 1}` }}
                 </a>
@@ -306,7 +306,7 @@
 import Layouts_main from '../layouts/layouts_main.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { Notify } from 'quasar'
-import api, { VITE_API_URL } from '../services/api.js' 
+import api, { API_URL } from '../services/api.js' 
 import { postTasks, putTasks, createNotification } from '../services/servicesComponent'
 
 const rol = Number(localStorage.getItem('rol'))
@@ -396,7 +396,6 @@ const entregarTareaWorker = async () => {
     const formData = new FormData()
     formData.append("file", entregaFile.value)
 
-    // ✅ Usamos 'api' que ya tiene la URL base y el token
     await api.post(`/tasks/deliver/${tareaEntrega.value._id}`, formData)
 
     Notify.create({ type: 'positive', message: 'Tarea entregada correctamente' })
@@ -459,6 +458,7 @@ const crearTarea = async () => {
     if (!name.value || !description.value || workers.value.length === 0) {
       return Notify.create({ type: 'negative', message: 'Complete campos obligatorios' })
     }
+    
     const payload = {
       name: name.value,
       description: description.value,
@@ -468,9 +468,13 @@ const crearTarea = async () => {
       stateTask: 1,
       isMonthly: isMonthly.value
     }
+    
     if (!isMonthly.value) payload.delivery_date = date.value
     else payload.monthlyDay = Number(monthlyDay.value)
     if (workers.value.length > 1) payload.leader = leader.value
+    if (crearArchivo.value) {
+      payload.attached_files = [crearArchivo.value];
+    }
 
     const respuesta = await postTasks(payload)
     const tareaCreada = respuesta.task || respuesta
@@ -486,9 +490,23 @@ const crearTarea = async () => {
         area_id: areaId
       })
     }
+    
     Notify.create({ type: 'positive', message: 'Tarea creada' })
-    showCreate.value = false; obtenerTareas()
+    showCreate.value = false
+    obtenerTareas()
+    
+    // ✅ Limpiar formulario
+    name.value = ''
+    description.value = ''
+    date.value = ''
+    workers.value = []
+    crearArchivo.value = null
+    leader.value = null
+    isMonthly.value = false
+    monthlyDay.value = null
+    
   } catch (error) {
+    console.error("Error al crear tarea:", error)
     Notify.create({ type: 'negative', message: 'Error al crear tarea' })
   }
 }

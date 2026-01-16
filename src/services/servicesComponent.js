@@ -91,7 +91,11 @@ export async function loginUser(credentials) {
   try {
     console.log("Enviando a backend:", credentials);
 
-    const res = await api.post("/users/login", credentials);
+    //Enviar directamente el objeto con gmail y password
+    const res = await api.post("/users/login", {
+      gmail: credentials.gmail,
+      password: credentials.password
+    });
 
     console.log("Respuesta del backend:", res.data);
 
@@ -131,18 +135,43 @@ export async function getTasksByWorker(userId) {
 
 export async function postTasks(form) {
   try {
-    // ✅ SI NO HAY ARCHIVOS, enviar JSON directo
+    console.log("📦 Form recibido:", form);
+    console.log("📎 Archivos adjuntos:", form.attached_files);
+    console.log("📏 Longitud:", form.attached_files?.length);
+    
+   
     if (!form.attached_files || form.attached_files.length === 0) {
-      const res = await api.post("/tasks/create", form, {
-        headers: {
-          ...getAuthHeaders().headers,
-          'Content-Type': 'application/json'
-        }
-      });
+      console.log("✅ Enviando como JSON (sin archivos)");
+      
+      const payload = {
+        name: form.name,
+        description: form.description,
+        tribute_id: form.tribute_id,
+        stateTask: form.stateTask,
+        area_id: form.area_id,
+        workers: form.workers,
+        isMonthly: form.isMonthly
+      };
+      
+      if (!form.isMonthly && form.delivery_date) {
+        payload.delivery_date = form.delivery_date;
+      }
+      
+      if (form.isMonthly && form.monthlyDay) {
+        payload.monthlyDay = form.monthlyDay;
+      }
+      
+      if (form.leader) {
+        payload.leader = form.leader;
+      }
+      
+      console.log("📤 Payload JSON:", payload);
+      const res = await api.post("/tasks/create", payload);
       return res.data;
     }
-
-    // ✅ SI HAY ARCHIVOS, usar FormData
+    
+    // ✅ Si HAY archivos, usar FormData
+    console.log("📎 Enviando como FormData (con archivos)");
     const formData = new FormData();
     
     formData.append("name", form.name);
@@ -151,16 +180,12 @@ export async function postTasks(form) {
     formData.append("stateTask", form.stateTask);
     formData.append("area_id", form.area_id);
     formData.append("workers", JSON.stringify(form.workers));
-    
-    // ✅ isMonthly como string "true" o "false" (el backend lo normaliza)
     formData.append("isMonthly", String(form.isMonthly));
     
-    // ✅ SOLO agregar delivery_date si NO es mensual
     if (!form.isMonthly && form.delivery_date) {
       formData.append("delivery_date", form.delivery_date);
     }
     
-    // ✅ SOLO agregar monthlyDay si ES mensual
     if (form.isMonthly && form.monthlyDay) {
       formData.append("monthlyDay", String(form.monthlyDay));
     }
@@ -169,25 +194,20 @@ export async function postTasks(form) {
       formData.append("leader", form.leader);
     }
     
-    if (form.attached_files?.length) {
-      form.attached_files.forEach(file => {
-        formData.append("attached_files", file);
-      });
-    }
-
-    const res = await api.post("/tasks/create", formData, {
-      headers: {
-        ...getAuthHeaders().headers
-      }
+    // Agregar archivos
+    form.attached_files.forEach((file, index) => {
+      console.log(`📎 Archivo ${index}:`, file); // ✅ CORREGIDO AQUÍ
+      formData.append("file", file);
     });
-
+    
+    const res = await api.post("/tasks/create", formData);
     return res.data;
+    
   } catch (error) {
     console.error("Error en postTasks:", error.response?.data || error);
     throw error;
   }
 }
-
 
 export async function getTasks() {
   try {
@@ -203,9 +223,9 @@ export async function putTasks(id, form) {
   try {
     const formData = new FormData();
 
+    // Agregar todos los campos excepto archivos
     Object.keys(form).forEach(key => {
       if (key !== "attached_files") {
-
         if (Array.isArray(form[key])) {
           formData.append(key, JSON.stringify(form[key]));
         } else {
@@ -214,19 +234,13 @@ export async function putTasks(id, form) {
       }
     });
 
-    // Archivos
     if (form.attached_files && form.attached_files.length > 0) {
       form.attached_files.forEach(file => {
-        formData.append("attached_files", file);
+        formData.append("file", file);
       });
     }
 
-    const res = await api.put(`/tasks/${id}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        ...getAuthHeaders().headers
-      }
-    });
+    const res = await api.put(`/tasks/${id}`, formData);
 
     return res.data;
 
@@ -236,7 +250,27 @@ export async function putTasks(id, form) {
   }
 }
 
+export async function entregarTarea(taskId, file) {
+  try {
+    const formData = new FormData();
+    
+    if (file) {
+      formData.append("file", file); // ✅ Usar "file" en minúscula
+    }
 
+    const res = await api.put(`/tasks/entregar/${taskId}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        ...getAuthHeaders().headers
+      }
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("Error al entregar tarea:", error.response?.data || error);
+    throw error;
+  }
+}
 
 
 // ÁREAS
@@ -261,18 +295,17 @@ export async function getArea() {
   }
 }
 
-
 export async function putArea(id, areaData) {
   try {
-    console.log(` PUT /areas/${id}`)
-    console.log(' Datos a enviar:', areaData)
+    console.log(`📤 PUT /areas/${id}`)
+    console.log('📋 Datos a enviar:', areaData)
     
     const res = await api.put(`/areas/${id}`, areaData, getAuthHeaders());
     
-    console.log(' Área actualizada:', res.data)
+    console.log('✅ Área actualizada:', res.data)
     return res.data;
   } catch (error) {
-    console.error(' Error al actualizar área:', error);
+    console.error('❌ Error al actualizar área:', error);
     if (error.response) {
       console.error('Status:', error.response.status);
       console.error('Data:', error.response.data);
@@ -280,8 +313,6 @@ export async function putArea(id, areaData) {
     throw error;
   }
 }
-
-
 
 export async function getData() {
   try {
@@ -292,6 +323,7 @@ export async function getData() {
     throw error;
   }
 }
+
 
 // NOTIFICACIONES
 
@@ -312,11 +344,10 @@ export async function createNotification(notificationData) {
   }
 }
 
-
 export async function getNotifications(params = {}) {
   try {
     const res = await api.get("/notify", {
-      params,                 // aquí van los filtros
+      params,
       ...getAuthHeaders()
     });
     return res.data;
@@ -342,7 +373,7 @@ export async function deleteNotification(id) {
 export async function deleteNotifications(params = {}) {
   try {
     const res = await api.delete("/notify", {
-      params,               // rol, userId, areaId
+      params,
       ...getAuthHeaders()
     });
     return res.data;
@@ -351,4 +382,3 @@ export async function deleteNotifications(params = {}) {
     throw error;
   }
 }
-

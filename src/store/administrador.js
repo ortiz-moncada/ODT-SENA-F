@@ -20,20 +20,16 @@ export const useAdminStore = defineStore('administrador', {
   },
 
   actions: {
-    async inicio(gmail, password) {
+   async inicio(credentials) {
       this.loading = true;
       try {
-        const credentials = {
-          gmail: gmail,
-          password: password
-        };
-
-        // loginUser ahora retorna directamente res.data
+        // ELIMINAMOS LA REASIGNACIÓN MANUAL QUE CAUSABA EL ERROR
+        
+        // loginUser ahora recibe directamente 'credentials' que viene del componente
         const data = await loginUser(credentials);
         
-        console.log("Respuesta del login:", data); // Para debug
+        console.log("Respuesta del login:", data); 
         
-        // Verificar estructura de la respuesta
         if (!data || !data.token || !data.user) {
           throw new Error('Respuesta del servidor incompleta');
         }
@@ -55,12 +51,7 @@ export const useAdminStore = defineStore('administrador', {
         this.loading = false;
         
         // Retornar en el formato que espera tu componente login
-        return {
-          data: {
-            token: data.token,
-            user: data.user
-          }
-        };
+        return data;
       } catch (error) {
         this.loading = false;
         console.error("Error completo en inicio:", error);
