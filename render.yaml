@@ -2,7 +2,7 @@ services:
   - type: web
     name: odt-sena-frontend
     env: static
-    buildCommand: npm install && npm run build && cp public/_redirects dist/_redirects
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
       - type: rewrite
