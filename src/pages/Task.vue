@@ -391,18 +391,46 @@ const seleccionarArchivoEntrega = () => {
 const entregarTareaWorker = async () => {
   try {
     if (!entregaFile.value) {
-      return Notify.create({ type: 'negative', message: 'Debe adjuntar un archivo' })
+      return Notify.create({ 
+        type: 'negative', 
+        message: 'Debe adjuntar un archivo' 
+      })
     }
+    
     const formData = new FormData()
     formData.append("file", entregaFile.value)
+    
+    //  Ruta correcta según tu backend
+    await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
 
-    await api.post(`/tasks/deliver/${tareaEntrega.value._id}`, formData)
-
-    Notify.create({ type: 'positive', message: 'Tarea entregada correctamente' })
+    Notify.create({ 
+      type: 'positive', 
+      message: 'Tarea entregada correctamente y enviada a revisión' 
+    })
+    
     showEntregaWorker.value = false
-    obtenerTareas()
+    entregaFile.value = null
+    tareaEntrega.value = null
+    
+    // Recargar las tareas para ver el cambio de estado
+    await obtenerTareas()
+    
   } catch (error) {
-    Notify.create({ type: 'negative', message: 'Error al entregar la tarea' })
+    console.error('Error al entregar tarea:', error)
+    
+    // Mostrar mensaje de error más específico
+    const mensaje = error.response?.data?.error || 
+                   error.response?.data?.message || 
+                   'Error al entregar la tarea'
+    
+    Notify.create({ 
+      type: 'negative', 
+      message: mensaje 
+    })
   }
 }
 
