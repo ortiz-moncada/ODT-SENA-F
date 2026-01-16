@@ -37,5 +37,26 @@ export default defineConfig({
         }
       }
     }
-  ]
+  ],
+
+  // ✅ Agregar configuración del servidor de desarrollo
+  server: {
+    port: 3000, // Opcional: cambia el puerto si quieres
+    // ✅ Esto soluciona el error 404 al recargar
+    historyApiFallback: true,
+    // ✅ Abrir el navegador automáticamente (opcional)
+    open: true
+  },
+
+  // ✅ También para el modo preview
+  preview: {
+    port: 3000,
+    historyApiFallback: true
+  },
+
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  }
 })
