@@ -1,5 +1,5 @@
 <template>
-<div v-if="fromUsers" class="overlay"></div>
+  <div v-if="showCreate" class="overlay"></div>
 
   <!-- MODAL CREAR USUARIO -->
   <div v-if="fromUsers" class="modal">
@@ -8,37 +8,33 @@
     </div>
 
     <div class="contemInputs-1">
-      <q-input class="name" filled v-model="name" :dense="dense" name="names" label="Nombre de Usuario" style="background: var(--white--);" />
-      <q-input class="identification" filled v-model="identification" :dense="dense" name="identification" label="Ingrese número de cédula" style="background: var(--white--);" />
-      
+      <q-input class="name" filled v-model="name" :dense="dense" name="names" label="Nombre de Usuario"
+        style="background: var(--white--);" />
+      <q-input class="identification" filled v-model="identification" :dense="dense" name="identification"
+        label="Ingrese número de cédula" style="background: var(--white--);" />
+
       <q-select class="rol" filled v-model="model" :options="Rol" label="Rol" style="background: var(--white--);" />
 
-      <q-input class="phone" filled v-model="phone" :dense="dense" name="phone" label="Ingrese número de celular" style="background: var(--white--);" />
-      <q-input class="gmail" filled v-model="gmail" name="gmail" label="Correo electrónico" :dense="dense" style="background: var(--white--);" />
-      <q-input class="password" filled v-model="password" :dense="dense" name="password" label="Contraseña" style="background: var(--white--);" />
+      <q-input class="phone" filled v-model="phone" :dense="dense" name="phone" label="Ingrese número de celular"
+        style="background: var(--white--);" />
+      <q-input class="gmail" filled v-model="gmail" name="gmail" label="Correo electrónico" :dense="dense"
+        style="background: var(--white--);" />
+      <q-input class="password" filled v-model="password" :dense="dense" name="password" label="Contraseña"
+        style="background: var(--white--);" />
 
-      <q-input class="Cp" v-model="confirmPassword" filled :type="isPwd ? 'password' : 'text'" label="Confirmación de contraseña" style="background: var(--white--);">
+      <q-input class="Cp" v-model="confirmPassword" filled :type="isPwd ? 'password' : 'text'"
+        label="Confirmación de contraseña" style="background: var(--white--);">
         <template v-slot:append>
           <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwd = !isPwd" />
         </template>
       </q-input>
 
-      <q-select
-        class="area"
-        v-if="model && model.value === 3 && userLog?.rol !== 2"
-        filled
-        v-model="selectedArea"
-        :options="areas"
-        label="Seleccione área"
-        :dense="dense"
-        option-label="label"
-        option-value="value"
-        clearable
-        style="background: var(--white--);"
-      />
+      <q-select class="area" v-if="model && model.value === 3 && userLog?.rol !== 2" filled v-model="selectedArea"
+        :options="areas" label="Seleccione área" :dense="dense" option-label="label" option-value="value" clearable
+        style="background: var(--white--);" />
     </div>
 
-    <button class="create-btn" @click="crearUser">CREAR</button>
+    <q-btn class="create-btn" :loading="loading" @click="crearUser">CREAR</q-btn>
     <button class="close-btn-m" @click="cerrarModal">CERRAR</button>
   </div>
 
@@ -49,86 +45,36 @@
     </div>
 
     <div class="contemInputs-1">
-      <q-input 
-        class="name" 
-        filled 
-        v-model="editForm.names" 
-        :dense="dense" 
-        label="Nombre de Usuario" 
-        style="background: var(--white--);" 
-      />
-      
-      <q-input 
-        class="identification" 
-        filled 
-        v-model="editForm.identification" 
-        :dense="dense" 
-        label="Número de cédula" 
-        style="background: var(--white--);" 
-      />
-      
-      <q-select 
-        class="rol" 
-        filled 
-        v-model="editForm.rol" 
-        :options="RolEdit" 
-        label="Rol" 
-        style="background: var(--white--);" 
-      />
+      <q-input class="name" filled v-model="editForm.names" :dense="dense" label="Nombre de Usuario"
+        style="background: var(--white--);" />
 
-      <q-input 
-        class="phone" 
-        filled 
-        v-model="editForm.phone" 
-        :dense="dense" 
-        label="Número de celular" 
-        style="background: var(--white--);" 
-      />
-      
-      <q-input 
-        class="gmail" 
-        filled 
-        v-model="editForm.gmail" 
-        label="Correo electrónico" 
-        :dense="dense" 
-        style="background: var(--white--);" 
-      />
+      <q-input class="identification" filled v-model="editForm.identification" :dense="dense" label="Número de cédula"
+        style="background: var(--white--);" />
 
-      <q-input 
-        class="password" 
-        filled 
-        v-model="editForm.password" 
-        :type="isPwdEdit ? 'password' : 'text'"
-        :dense="dense" 
-        label="Nueva contraseña (opcional)" 
-        style="background: var(--white--);"
-        hint="Dejar en blanco para no cambiar"
-      >
+      <q-select class="rol" filled v-model="editForm.rol" :options="RolEdit" label="Rol"
+        style="background: var(--white--);" />
+
+      <q-input class="phone" filled v-model="editForm.phone" :dense="dense" label="Número de celular"
+        style="background: var(--white--);" />
+
+      <q-input class="gmail" filled v-model="editForm.gmail" label="Correo electrónico" :dense="dense"
+        style="background: var(--white--);" />
+
+      <q-input class="password" filled v-model="editForm.password" :type="isPwdEdit ? 'password' : 'text'"
+        :dense="dense" label="Nueva contraseña (opcional)" style="background: var(--white--);"
+        hint="Dejar en blanco para no cambiar">
         <template v-slot:append>
-          <q-icon 
-            :name="isPwdEdit ? 'visibility_off' : 'visibility'" 
-            class="cursor-pointer" 
-            @click="isPwdEdit = !isPwdEdit" 
-          />
+          <q-icon :name="isPwdEdit ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+            @click="isPwdEdit = !isPwdEdit" />
         </template>
       </q-input>
 
-      <q-select
-        class="area"
-        v-if="editForm.rol && editForm.rol.value === 3 && userLog?.rol !== 2"
-        filled
-        v-model="editForm.selectedArea"
-        :options="areas"
-        label="Seleccione área"
-        :dense="dense"
-        option-label="label"
-        option-value="value"
-        clearable
-        style="background: var(--white--);"
-      />
+      <q-select class="area" v-if="editForm.rol && editForm.rol.value === 3 && userLog?.rol !== 2" filled
+        v-model="editForm.selectedArea" :options="areas" label="Seleccione área" :dense="dense" option-label="label"
+        option-value="value" clearable style="background: var(--white--);" />
     </div>
 
-    <button class="create-btn" @click="actualizarUsuario">ACTUALIZAR</button>
+    <q-btn class="create-btn" :loading="loading" @click="actualizarUsuario">ACTUALIZAR</q-btn>
     <button class="close-btn-m" @click="cerrarModalEditar">CERRAR</button>
   </div>
 
@@ -143,7 +89,8 @@
 
       <div class="infoP">
         <h3 style="font-weight:800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 29%;" src="https://cdn-icons-png.flaticon.com/128/8237/8237612.png">
+          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 29%;"
+            src="https://cdn-icons-png.flaticon.com/128/8237/8237612.png">
           Información personal
         </h3>
         <p><b>Nombre</b> {{ selectedUser.names }}</p>
@@ -152,7 +99,8 @@
 
       <div class="infoC">
         <h3 style="font-weight: 800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px;margin-left: 14%;" src="https://cdn-icons-png.flaticon.com/128/4350/4350908.png">
+          <img style="position: absolute; max-width: 40px; margin-top: 4px;margin-left: 14%;"
+            src="https://cdn-icons-png.flaticon.com/128/4350/4350908.png">
           Contacto
         </h3>
         <p> <b>Correo </b> {{ selectedUser.gmail }}</p>
@@ -162,7 +110,8 @@
 
       <div class="infoL">
         <h3 style="font-weight: 800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 55%;" src="https://cdn-icons-png.flaticon.com/128/9901/9901586.png">
+          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 55%;"
+            src="https://cdn-icons-png.flaticon.com/128/9901/9901586.png">
           Información laboral
         </h3>
         <p><b>Area</b> {{ selectedUser.areaName || 'Sin área' }}</p>
@@ -171,13 +120,8 @@
         <div>
           <p>
             <b>Estado</b>
-            <q-chip 
-              :label="stateMap[selectedUser.state]?.label"
-              :color="stateMap[selectedUser.state]?.color"
-              text-color="white"
-              size="sm"
-              class="q-mx-sm"
-            />
+            <q-chip :label="stateMap[selectedUser.state]?.label" :color="stateMap[selectedUser.state]?.color"
+              text-color="white" size="sm" class="q-mx-sm" />
           </p>
         </div>
       </div><br><br>
@@ -188,16 +132,16 @@
 
   <!-- LISTADO -->
   <Layouts_main>
-    <h1 style="text-align: center; margin-top: -2%;" :style="{ color: 'var(--oneColor--)' }" >USUARIOS</h1>
+    <h1 style="text-align: center; margin-top: -2%;" :style="{ color: 'var(--oneColor--)' }">USUARIOS</h1>
     <hr><br>
 
     <div class="filters">
       <q-btn-dropdown class="LP" :label="ordenarLabel">
         <q-list>
-          <q-item clickable v-close-popup @click="setOrden('asc','A → Z')">
+          <q-item clickable v-close-popup @click="setOrden('asc', 'A → Z')">
             <q-item-section><q-item-label>A → Z</q-item-label></q-item-section>
           </q-item>
-          <q-item clickable v-close-popup @click="setOrden('desc','Z → A')">
+          <q-item clickable v-close-popup @click="setOrden('desc', 'Z → A')">
             <q-item-section><q-item-label>Z → A</q-item-label></q-item-section>
           </q-item>
         </q-list>
@@ -205,55 +149,49 @@
 
       <q-btn-dropdown class="IA" :label="estadoLabel">
         <q-list>
-          <q-item clickable v-close-popup @click="setEstado( 1, 'Activos' )">Activos</q-item>
-          <q-item clickable v-close-popup @click="setEstado( 2, 'Inactivos' )">Inactivos</q-item>
+          <q-item clickable v-close-popup @click="setEstado(1, 'Activos')">Activos</q-item>
+          <q-item clickable v-close-popup @click="setEstado(2, 'Inactivos')">Inactivos</q-item>
         </q-list>
       </q-btn-dropdown>
     </div><br><br>
 
-    <q-input v-model="search" dense outlined style="width: 400px; margin-left: 2%; position: absolute; margin-top: -2.5%;" label="INGRESE NOMBRE DE USUARIO">
+    <q-input v-model="search" dense outlined
+      style="width: 400px; margin-left: 2%; position: absolute; margin-top: -2.5%;" label="INGRESE NOMBRE DE USUARIO">
       <template v-slot:append>
         <q-btn flat dense round>
-          <img src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png" style="width: 18px; height: 18px;" />
+          <img
+            src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
+            style="width: 18px; height: 18px;" />
         </q-btn>
       </template>
     </q-input>
     <br>
 
-    <q-btn :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }" label="CREAR +" style="position: absolute; margin-left: 75%; margin-top: -4%;" @click="abrirModal"/>
+    <q-btn :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }" label="CREAR +"
+      style="position: absolute; margin-left: 75%; margin-top: -4%;" @click="abrirModal" />
 
     <div class="q-pa-md">
-     <q-table 
-  style="text-align: center; height: 400px; width: 97%; margin-left: 1%;" 
-  flat 
-  bordered 
-  :key="refreshKey"
-  :rows="filteredUsers"
-  :columns="columns" 
-  row-key="index"
-  v-model:pagination="pagination" 
-  :rows-per-page-options="[0]"
-  :no-data-label="' '"
->
+      <q-table style="text-align: center; height: 400px; width: 97%; margin-left: 1%;" flat bordered :key="refreshKey"
+        :rows="filteredUsers" :columns="columns" row-key="index" v-model:pagination="pagination"
+        :rows-per-page-options="[0]" :no-data-label="' '">
 
 
         <template v-slot:body-cell-opcions="props">
           <q-td :props="props" class="text-center">
-            <q-btn size="sm" :color="props.row.state === 1 ? 'negative' : 'green'" :icon="props.row.state === 1 ? 'close' : 'check'" round dense class="q-ml-sm" @click="toggleEstado(props.row)" />
-            <q-btn size="sm" color="primary" icon="edit" round dense class="q-ml-sm" @click="editarUsuario(props.row)" />
-            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm" @click="verDetalles(props.row)" />
+            <q-btn size="sm" :color="props.row.state === 1 ? 'negative' : 'green'"
+              :icon="props.row.state === 1 ? 'close' : 'check'" round dense class="q-ml-sm"
+              @click="toggleEstado(props.row)" />
+            <q-btn size="sm" color="primary" icon="edit" round dense class="q-ml-sm"
+              @click="editarUsuario(props.row)" />
+            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
+              @click="verDetalles(props.row)" />
           </q-td>
         </template>
 
         <template v-slot:body-cell-state="props">
           <q-td :props="props">
-            <q-chip 
-              :label="stateMap[props.row.state]?.label"
-              :color="stateMap[props.row.state]?.color"
-              text-color="white"
-              size="sm"
-              class="q-mx-sm"
-            />
+            <q-chip :label="stateMap[props.row.state]?.label" :color="stateMap[props.row.state]?.color"
+              text-color="white" size="sm" class="q-mx-sm" />
           </q-td>
         </template>
 
@@ -264,19 +202,19 @@
         </template>
 
         <template v-slot:no-data>
-  <div class="full-width text-grey-7" style="margin-top: -22%;">
-    <q-icon size="40px" class="q-mr-sm" />
-    <img src="../IMG/pregunta (1).png" alt="" style="max-width: 15%;">
+          <div class="full-width text-grey-7" style="margin-top: -22%;">
+            <q-icon size="40px" class="q-mr-sm" />
+            <img src="../IMG/pregunta (1).png" alt="" style="max-width: 15%;">
 
-    <span v-if="userData.length === 0">
-      No hay usuarios registrados
-    </span>
+            <span v-if="userData.length === 0">
+              No hay usuarios registrados
+            </span>
 
-    <span v-else>
-     <h3 style="margin-left: 5%;"> No hay usuarios con los filtros aplicados</h3>
-    </span>
-  </div>
-</template>
+            <span v-else>
+              <h3 style="margin-left: 5%;"> No hay usuarios con los filtros aplicados</h3>
+            </span>
+          </div>
+        </template>
 
 
       </q-table>
@@ -315,15 +253,17 @@ const filtroEstado = ref(null)
 const orden = ref("asc")
 const ordenarLabel = ref('Ordenar')
 const estadoLabel = ref("Estado")
+const loading = ref(false)
+const showCreate = ref(false)
 
-const setOrden = (valor,texto)=>{
+const setOrden = (valor, texto) => {
   orden.value = valor
   ordenarLabel.value = texto
 
 }
-const setEstado = (valor, texto)=>{
-filtroEstado.value = valor
-estadoLabel.value = texto
+const setEstado = (valor, texto) => {
+  filtroEstado.value = valor
+  estadoLabel.value = texto
 
 }
 
@@ -449,20 +389,24 @@ watch(() => editForm.value.rol, (newValue) => {
 
 const abrirModal = () => {
   fromUsers.value = true
+  showCreate.value = true;
 }
 
 const cerrarModal = () => {
   limpiarFormulario()
   fromUsers.value = false
+  showCreate.value = false;
 }
 
 const cerrarModalEditar = () => {
   showEditModal.value = false
   limpiarFormularioEditar()
+  showCreate.value = false;
 }
 
 const crearUser = async () => {
   try {
+    showCreate.value = true;
     if (!name.value || !gmail.value || !phone.value || !password.value || !identification.value) {
       Notify.create({ position: "top", type: 'negative', message: 'Por favor completa todos los campos obligatorios' });
       return;
@@ -499,7 +443,7 @@ const crearUser = async () => {
         }
       }
     }
-
+    loading.value = true;
     const dataUser = {
       names: name.value.trim(),
       identification: identification.value.trim(),
@@ -535,9 +479,10 @@ const crearUser = async () => {
       areaName: user.areaName || user.areaId?.name || 'Sin área'
     }));
     refreshKey.value++;
-
+    loading.value = false;
     limpiarFormulario();
     fromUsers.value = false;
+
 
   } catch (error) {
     Notify.create({
@@ -550,8 +495,9 @@ const crearUser = async () => {
 }
 
 const editarUsuario = (usuario) => {
+  showCreate.value = true;
   console.log("📝 Editando usuario:", usuario);
-  
+
   let areaActual = null;
   if (usuario.areaId && areas.value.length > 0) {
     areaActual = areas.value.find(a => a.value === usuario.areaId);
@@ -581,20 +527,21 @@ const editarUsuario = (usuario) => {
 
 const actualizarUsuario = async () => {
   try {
+    loading.value = true;
     if (!editForm.value.names || !editForm.value.gmail || !editForm.value.phone || !editForm.value.identification) {
-      Notify.create({ 
-        position: "top", 
-        type: 'negative', 
-        message: 'Por favor completa todos los campos obligatorios' 
+      Notify.create({
+        position: "top",
+        type: 'negative',
+        message: 'Por favor completa todos los campos obligatorios'
       });
       return;
     }
 
     if (!editForm.value.rol) {
-      Notify.create({ 
-        position: "top", 
-        type: 'negative', 
-        message: 'Por favor seleccione un rol' 
+      Notify.create({
+        position: "top",
+        type: 'negative',
+        message: 'Por favor seleccione un rol'
       });
       return;
     }
@@ -665,6 +612,7 @@ const actualizarUsuario = async () => {
     if (userLog.value?.rol === 2) {
       userData.value = userData.value.filter(u => u.areaId === userLog.value.areaId);
     }
+    loading.value = false;
 
     refreshKey.value++;
     cerrarModalEditar();
@@ -692,7 +640,7 @@ const getRolName = (rol) => {
 const toggleEstado = async (usuario) => {
   try {
     const nuevoEstado = usuario.state === 1 ? 2 : 1;
-    
+
     console.log(`🔄 Cambiando estado de ${usuario.names} de ${usuario.state} a ${nuevoEstado}`);
 
     // ✅ SOLO ENVIAR EL ESTADO - NO TODA LA DATA DEL USUARIO
@@ -704,7 +652,7 @@ const toggleEstado = async (usuario) => {
 
     // Actualizar localmente
     usuario.state = nuevoEstado;
-    
+
     Notify.create({
       position: "top",
       type: 'positive',

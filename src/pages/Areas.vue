@@ -21,7 +21,7 @@
       </q-select>
     </div>
 
-    <button class="create-btn" @click="crearArea">CREAR</button>
+    <q-btn :loading="loading" class="create-btn" @click="crearArea">CREAR</q-btn>
     <button class="close-btn-m" @click="fromAreas = false">CERRAR</button>
   </div>
 
@@ -46,7 +46,7 @@
       </q-select>
     </div>
 
-    <button class="create-btn" @click="actualizarArea">ACTUALIZAR</button>
+    <q-btn :loading="loading" class="create-btn" @click="actualizarArea">ACTUALIZAR</q-btn>
     <button class="close-btn-m" @click="cerrarModalEditar">CERRAR</button>
   </div>
 
@@ -180,6 +180,7 @@ const filtroEstado = ref(null)
 const orden = ref("asc")
 const ordenarLabel = ref('Ordenar')
 const estadoLabel = ref('Estado')
+const loading = ref(false)
 
 const editForm = ref({ _id: '', name: '', description: '', admin: null, state: 1 })
 
@@ -223,6 +224,7 @@ const obtenerAdmins = async () => {
 
 const crearArea = async () => {
   try {
+    loading.value = true;
     if (!name.value || !description.value || !admin.value) {
       return Notify.create({ type: 'negative', message: 'Complete todos los campos', position: 'top' })
     }
@@ -231,6 +233,7 @@ const crearArea = async () => {
     
     await recargarAreas()
     name.value = ''; description.value = ''; admin.value = null; fromAreas.value = false
+    loading.value = false;
   } catch (error) {
     Notify.create({ type: 'negative', message: 'Error al crear área', position: 'top' })
   }
@@ -249,12 +252,14 @@ const editarArea = (area) => {
 
 const actualizarArea = async () => {
   try {
+    loading.value = true;
     if (!editForm.value.name || !editForm.value.admin) {
       return Notify.create({ type: 'negative', message: 'Nombre y Encargado obligatorios', position: 'top' })
     }
     await putArea(editForm.value._id, editForm.value)
     Notify.create({ type: 'positive', message: 'Área actualizada', position: 'top' })
     await recargarAreas()
+    loading.value = false;
     cerrarModalEditar()
   } catch (error) {
     Notify.create({ type: 'negative', message: 'Error al actualizar', position: 'top' })

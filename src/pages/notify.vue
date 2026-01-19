@@ -9,7 +9,7 @@
       <b class="tInfo">Área: {{ user.area }}</b>
       <b class="tInfo">Rol: {{ user.rol }}</b>
     </div>
-      <q-btn style="background: var(--oneColor--); color: var(--white--); position: relative;  margin-left: 75%; margin-top: -5%;" @click="generarInforme" label="Archivo" icon="archive" />
+      <q-btn :loading="loading" style="background: var(--oneColor--); color: var(--white--); position: relative;  margin-left: 75%; margin-top: -5%;" @click="generarInforme" label="Archivo" icon="archive" />
       <q-btn style="background: var(--sevenColor--); color: var(--white--); position: relative;  margin-left: 60%; margin-top: -7.8%;" @click="eliminarNotificacioness" label="eliminar historial" icon="delete" />
 
     <div class="alerts" v-if="notifications.length">
@@ -41,6 +41,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
+
 const stateMap = {
    1: { label: "En Desarrollo", color: "blue" },
   2: { label: "En Revisión", color: "orange" },
@@ -48,16 +49,16 @@ const stateMap = {
   4: { label: "Rechazada", color: "red" },
   5: { label: "Vencida", color: "grey" }
 };
-
+const loading = ref(false)
 const defaultColor = "#4CAF50";
 const notifications = ref([]);
 const user = ref({ rol: "", area: "" });
 const roles = { 1: "Super Admin", 2: "Administrador", 3: "Usuario" };
 let pollingInterval = null;
 
-/**
- * EXTRAE LOS NÚMEROS DEL TEXTO PARA EL COLOR
- */
+
+// EXTRAE LOS NÚMEROS DEL TEXTO PARA EL COLOR
+
 const getCardStyle = (n) => {
   // Buscamos el último número en la descripción (el estado nuevo)
   const matches = n.description.match(/\d+/g);
@@ -70,9 +71,8 @@ const getCardStyle = (n) => {
   };
 };
 
-/**
- * REEMPLAZA LOS NÚMEROS POR TEXTO EN LA DESCRIPCIÓN
- */
+// REEMPLAZA LOS NÚMEROS POR TEXTO EN LA DESCRIPCIÓN
+
 const processDescription = (desc) => {
   if (!desc) return "";
   
@@ -116,6 +116,7 @@ onMounted(async () => {
 
 onUnmounted(() => { if (pollingInterval) clearInterval(pollingInterval); });
 const generarInforme = () => {
+  loading.value = true;
   if (!notifications.value.length) {
     Notify.create({
       type: "warning",
@@ -149,6 +150,7 @@ const generarInforme = () => {
     styles: { fontSize: 9 },
     headStyles: { fillColor: [76, 175, 80] }
   });
+  loading.value =false;
 
   doc.save("informe_notificaciones.pdf");
 };
@@ -172,7 +174,7 @@ const eliminarNotificacioness = async () => {
 
     await deleteNotifications(params);
 
-    notifications.value = []; // 🔴 LIMPIA LA LISTA
+    notifications.value = []; //  LIMPIA LA LISTA
 
     Notify.create({
       type: "positive",

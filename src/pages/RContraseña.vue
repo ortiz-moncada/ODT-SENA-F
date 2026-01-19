@@ -12,7 +12,7 @@
       <div class="inputBuscar">
         <i class="icono fas fa-envelope"></i>
         <input v-model="gmail" type="email" placeholder="Correo electrónico" />
-        <button class="btnBuscar" @click="buscarCorreo">BUSCAR</button>
+        <q-btn :loading="loading" class="btnBuscar" @click="buscarCorreo">BUSCAR</q-btn>
       </div>
     </section>
 
@@ -66,7 +66,7 @@
 
         <div class="botones">
           <button @click="closeRC" class="btnCerrar">CERRAR</button>
-          <button @click="restablecerContrasena" class="btnRestablecer">RESTABLECER</button>
+          <q-btn :loading="loading" @click="restablecerContrasena" class="btnRestablecer">RESTABLECER</q-btn>
         </div>
       </div>
     </div>
@@ -83,9 +83,11 @@ const gmail = ref("");
 const usuario = ref("");
 const nuevaContrasena = ref("");
 const confirmarContrasena = ref("");
+const loading = ref(false);
 
 async function buscarCorreo() {
   try {
+    loading.value = true;
     usuario.value = " ";
 
     if (!gmail.value) {
@@ -102,7 +104,7 @@ async function buscarCorreo() {
       message: 'Usuario encontrado con exito'
     })
     }
-
+    loading.value = false;
     const data = await getCorreo(gmail.value);
     usuario.value = data;
   } catch (error) {
@@ -146,6 +148,7 @@ async function restablecerContrasena() {
   }
 
   try {
+    loading.value = true;
     console.log(" Restableciendo contraseña...");
     console.log(" Usuario ID:", usuario.value._id);
     
@@ -153,7 +156,7 @@ async function restablecerContrasena() {
     await resetPassword(usuario.value._id, nuevaContrasena.value);
     
     console.log(" Contraseña restablecida exitosamente");
-
+loading.value = false;
     Notify.create({
       position:"top",
       type: 'positive',

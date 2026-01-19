@@ -107,7 +107,7 @@
       { label: 'Vencida', value: 5 },
     ]" label="Estado de la tarea" emit-value map-options />
 
-    <button class="create-btn" @click="actualizarTarea">ACTUALIZAR</button>
+    <q-btn :loading="loading" class="create-btn" @click="actualizarTarea">ACTUALIZAR</q-btn>
     <button class="close-btn-m" @click="showEdit = false">CERRAR</button>
   </div>
 
@@ -185,7 +185,7 @@
       </div>
     </div>
 
-    <button class="create-btn" @click="entregarTareaWorker"> ENTREGAR </button>
+    <q-btn :loading="loading" class="create-btn" @click="entregarTareaWorker"> ENTREGAR </q-btn>
     <button class="close-btn-m" @click="showEntregaWorker = false"> CERRAR </button>
   </div>
 
@@ -344,6 +344,7 @@ const tareaEntrega = ref(null)
 const ordenLabel = ref('Ordenar')
 const estadoLabel = ref('Estado')
 const leader = ref(null)
+const loading = ref(false)
 
 const isMonthly = ref(false)
 const monthlyDay = ref(null)
@@ -390,49 +391,37 @@ const seleccionarArchivoEntrega = () => {
 
 const entregarTareaWorker = async () => {
   try {
+    loading.value = true;
     if (!entregaFile.value) {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Debe adjuntar un archivo' 
-      })
+       return Notify.create({ type: 'negative', message: 'Debe adjuntar un archivo' });
     }
     
-    const formData = new FormData()
-    formData.append("file", entregaFile.value)
+    const formData = new FormData();
+    formData.append("file", entregaFile.value);
     
-    //  Ruta correcta según tu backend
-    await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData);
 
-    Notify.create({ 
-      type: 'positive', 
-      message: 'Tarea entregada correctamente y enviada a revisión' 
-    })
-    
-    showEntregaWorker.value = false
-    entregaFile.value = null
-    tareaEntrega.value = null
-    
-    // Recargar las tareas para ver el cambio de estado
-    await obtenerTareas()
-    
+    // --- AGREGAR ESTO PARA NOTIFICAR AL ADMIN ---
+    // Notificamos al creador de la tarea (tribute_id)
+    await createNotification({
+      title: "Tarea Entregada (Para Revisión)",
+      nameTask: tareaEntrega.value.name,
+      description: `El trabajador ha entregado la tarea. Estado: 2`,
+      task_id: tareaEntrega.value._id,
+      user_id: tareaEntrega.value.tribute_id, // El admin que la creó
+      area_id: areaId
+    });
+    // ----------------------------------------------
+
+    Notify.create({ type: 'positive', message: 'Tarea entregada correctamente' });
+    showEntregaWorker.value = false;
+    await obtenerTareas();
   } catch (error) {
-    console.error('Error al entregar tarea:', error)
-    
-    // Mostrar mensaje de error más específico
-    const mensaje = error.response?.data?.error || 
-                   error.response?.data?.message || 
-                   'Error al entregar la tarea'
-    
-    Notify.create({ 
-      type: 'negative', 
-      message: mensaje 
-    })
+    // ... tu manejo de errores actual
+  } finally {
+    loading.value = false;
   }
-}
+};
 
 const setOrden = (valor, texto) => { orden.value = valor; ordenLabel.value = texto }
 const setEstado = (valor, texto) => { filterStated.value = valor; estadoLabel.value = texto }
@@ -557,13 +546,32 @@ const actualizarTarea = async () => {
       workers: editWorkers.value,
       delivery_date: editDate.value,
       stateTask: editState.value
-    })
-    Notify.create({ type: 'positive', message: 'Tarea actualizada' })
-    showEdit.value = false; obtenerTareas()
+    });
+
+    // --- AGREGAR ESTO PARA GENERAR NOTIFICACIÓN ---
+    const estadoTexto = stateMap[editState.value]?.label || "actualizado";
+    
+    for (const workerId of editWorkers.value) {
+      await createNotification({
+        title: `Estado actualizado: ${estadoTexto}`,
+        nameTask: editName.value,
+        // Usamos el número del estado al final para que tu lógica de colores en notify.vue funcione
+        description: `La tarea cambió al estado: ${editState.value}`, 
+        deliveryDate: editDate.value,
+        task_id: editId.value,
+        user_id: workerId,
+        area_id: areaId
+      });
+    }
+    // ----------------------------------------------
+
+    Notify.create({ type: 'positive', message: 'Tarea actualizada' });
+    showEdit.value = false; 
+    obtenerTareas();
   } catch (error) {
-    Notify.create({ type: 'negative', message: 'Error al actualizar' })
+    Notify.create({ type: 'negative', message: 'Error al actualizar' });
   }
-}
+};
 
 const obtenerTareas = async () => {
   try {
