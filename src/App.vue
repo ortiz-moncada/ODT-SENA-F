@@ -6,9 +6,11 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { getNotifications } from "./services/servicesComponent";
 import audioFile from "../src/Audio/audio3.mp3"; 
+import { useAdminStore } from "./store/administrador.js";
 
+const adminStore = useAdminStore();
 const notificationSound = new Audio(audioFile);
-const lastCount = ref(null); // Empezamos en null para saber si es la primera carga
+const lastCount = ref(null); 
 let globalPolling = null;
 
 const checkNotifications = async () => {
@@ -22,43 +24,38 @@ const checkNotifications = async () => {
   if (rol === 3) params.userId = userId;
   if (rol === 2) params.areaId = areaId;
 
-  try {
+try {
     const data = await getNotifications(params);
-    const currentCount = data.length;
+    const totalEnServidor = data.length;
 
-    // LÓGICA DEL SONIDO:
-    // 1. Si lastCount es null, es la primera vez que entramos (no suena)
-    if (lastCount.value === null) {
-      lastCount.value = currentCount;
-      return;
+    // Calculamos el número real para la campana:
+    // Es el total del servidor MENOS lo que el usuario ya marcó como visto localmente
+    const nuevasParaMostrar = totalEnServidor - adminStore.totalLeidoLocal;
+
+    // Actualizamos el contador de la campana (asegurando que no sea negativo)
+    adminStore.countNotifications = nuevasParaMostrar > 0 ? nuevasParaMostrar : 0;
+
+    // SONIDO: Solo si el total del servidor aumentó desde la última vez que revisamos
+    if (lastCount.value !== null && totalEnServidor > lastCount.value) {
+       notificationSound.currentTime = 0;
+       notificationSound.play().catch(e => console.warn("Sonido bloqueado"));
     }
 
-    // 2. Si el número actual es mayor al que teníamos guardado, hay algo nuevo
-    if (currentCount > lastCount.value) {
-      notificationSound.currentTime = 0; // Reinicia el audio por si acaso
-      notificationSound.play().catch(e => {
-        console.warn("Sonido bloqueado hasta que el usuario haga clic en la app.");
-      });
-      console.log("¡Nueva notificación detectada!");
-    }
-
-    // Siempre actualizamos el contador al final
-    lastCount.value = currentCount;
+    // Guardamos este total para la siguiente comparación de sonido
+    lastCount.value = totalEnServidor;
 
   } catch (error) {
-    console.error("Error en polling global:", error);
+    console.error("Error en polling:", error);
   }
 };
 
 onMounted(() => {
-  // Ejecutamos la primera vez inmediatamente
   checkNotifications();
-  
-  // Revisar cada 20 segundos
   globalPolling = setInterval(checkNotifications, 20000);
 });
 
 onUnmounted(() => {
+  adminStore.countNotifications = 0;
   if (globalPolling) clearInterval(globalPolling);
 });
 </script>

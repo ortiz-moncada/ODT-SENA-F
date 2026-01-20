@@ -9,6 +9,9 @@ export const useAdminStore = defineStore('administrador', {
     rol: localStorage.getItem('rol') ? Number(localStorage.getItem('rol')) : null,
     areaId: localStorage.getItem('areaId') || null,
     loading: false,
+    isAuthenticated: false,
+    countNotifications: 0,
+    totalLeidoLocal: 0,
   }),
 
   getters: {

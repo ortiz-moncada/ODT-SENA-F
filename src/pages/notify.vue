@@ -9,7 +9,7 @@
       <b class="tInfo">Área: {{ user.area }}</b>
       <b class="tInfo">Rol: {{ user.rol }}</b>
     </div>
-      <q-btn :loading="loading" style="background: var(--oneColor--); color: var(--white--); position: relative;  margin-left: 75%; margin-top: -5%;" @click="generarInforme" label="Archivo" icon="archive" />
+      <q-btn :loading="loading" style="background: var(--oneColor--); color: var(--white--); position: relative;  margin-left: 77%; margin-top: -5%;" @click="generarInforme" label="Descargar historial" icon="archive" />
       <q-btn style="background: var(--sevenColor--); color: var(--white--); position: relative;  margin-left: 60%; margin-top: -7.8%;" @click="eliminarNotificacioness" label="eliminar historial" icon="delete" />
 
     <div class="alerts" v-if="notifications.length">
@@ -55,6 +55,8 @@ const notifications = ref([]);
 const user = ref({ rol: "", area: "" });
 const roles = { 1: "Super Admin", 2: "Administrador", 3: "Usuario" };
 let pollingInterval = null;
+import { useAdminStore } from "../store/administrador.js";
+const adminStore = useAdminStore();
 
 
 // EXTRAE LOS NÚMEROS DEL TEXTO PARA EL COLOR
@@ -101,6 +103,7 @@ const cargarNotificaciones = async () => {
 
 
 onMounted(async () => {
+  adminStore.countNotifications = 0;
   try {
     const id = localStorage.getItem("userId");
     if (!id) return;

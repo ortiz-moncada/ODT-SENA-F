@@ -579,14 +579,21 @@ const obtenerTareas = async () => {
     if (rol === 1 || rol === 2) endpoint = `/tasks/seeTasks`
     else if (rol === 3) endpoint = `/tasks/byWorker/${userId}`
 
-    //  Usamos 'api' (el interceptor ya añade el token)
     const res = await api.get(endpoint)
     let lista = res.data
-    if (rol === 2) lista = lista.filter(t => String(t.area_id) === String(areaId))
+
+    // FILTRO PARA ADMINISTRADOR (ROL 2)
+    if (rol === 2) {
+      lista = lista.filter(t => {
+        // Extraemos el ID ya sea que venga como string o como objeto
+        const tAreaId = typeof t.area_id === 'object' ? t.area_id._id : t.area_id;
+        return String(tAreaId) === String(areaId);
+      });
+    }
 
     tasks.value = lista.map((t, i) => ({ ...t, index: i + 1 }))
   } catch (error) {
-    console.error(error)
+    console.error("Error al obtener tareas:", error)
   }
 }
 

@@ -14,13 +14,18 @@
         </q-toolbar-title>
       
          <P class="Ncom">ORGANIZADOR DE TAREAS</P>
-          <q-btn
-    flat
-    round
-    icon="notifications_none"
-    style="position: absolute; margin-left: 94%;"
-    @click="passNotify"
-  />
+         
+         <q-btn
+  flat
+  round
+  icon="notifications_none"
+  style="position: absolute; margin-left: 94%;"
+  @click="passNotify"
+>
+  <q-badge v-if="adminStore.countNotifications > 0" color="red" floating>
+    {{ adminStore.countNotifications > 9 ? '9+' : adminStore.countNotifications }}
+  </q-badge>
+</q-btn>
   <span v-if="contador > 0" class="badge">
     {{ contador > 9 ? '9+' : contador }}
   </span>
@@ -135,6 +140,12 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { useAdminStore } from "../store/administrador.js";
+const passNotify = () => {
+  adminStore.totalLeidoLocal += adminStore.countNotifications;
+  adminStore.countNotifications = 0;
+  router.push("/notify");
+};
+
 
 const $q = useQuasar();
 const router = useRouter();
@@ -147,9 +158,6 @@ const contador = ref(0);
 const nuevaNotificacion = () => {
   contador.value++
 }
-const passNotify= () =>{
-router.push("/notify")
-} 
 /* ===== MENÚ POR ROLES ===== */
 const menuItems = computed(() => {
   const rol = adminStore.user?.rol;
