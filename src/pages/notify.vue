@@ -2,19 +2,73 @@
   <Layouts_main>
     <div class="title">
       <h1 :style="{ color: 'var(--oneColor--)' }" style="margin-left: 13%; margin-top: -1%; position: relative;">Notificaciones</h1>
-     <!--  <button @click="cargarNotificaciones" class="btnRefresh">Actualizar</button> -->
     </div>
 
     <div class="mInfo">
       <b class="tInfo">Área: {{ user.area }}</b>
       <b class="tInfo">Rol: {{ user.rol }}</b>
     </div>
-      <q-btn :loading="loading" style="background: var(--oneColor--); color: var(--white--); position: relative;  margin-left: 77%; margin-top: -5%;" @click="generarInforme" label="Descargar historial" icon="archive" />
-      <q-btn style="background: var(--sevenColor--); color: var(--white--); position: relative;  margin-left: 60%; margin-top: -7.8%;" @click="eliminarNotificacioness" label="eliminar historial" icon="delete" />
 
-    <div class="alerts" v-if="notifications.length">
+    <!-- Filtros 
+    <div class="filters" style="margin-left: 13%; margin-top: 2%; display: flex; gap: 10px; align-items: center;">
+      <q-select
+        v-model="filtroEstado"
+        :options="estadoOptions"
+        label="Filtrar por estado"
+        outlined
+        dense
+        style="width: 200px;"
+        @update:model-value="aplicarFiltros"
+      />
+      <q-select
+        v-model="filtroTipo"
+        :options="tipoOptions"
+        label="Filtrar por tipo"
+        outlined
+        dense
+        style="width: 200px;"
+        @update:model-value="aplicarFiltros"
+      />
+      <q-btn 
+        flat 
+        dense 
+        icon="close" 
+        @click="limpiarFiltros"
+        v-if="filtroEstado || filtroTipo"
+      >
+        <q-tooltip>Limpiar filtros</q-tooltip>
+      </q-btn>
+      <span class="text-grey-7" style="margin-left: auto; margin-right: 2%;">
+        {{ notificationsFiltradas.length }} notificación(es)
+      </span>
+    </div>-->
+
+    <div style="display: flex; gap: 10px; margin-left: 77%; margin-top: -3%;">
+     <q-btn
+  dense
+  flat
+  :loading="loading"
+  icon="archive"
+  label="Historial"
+  class="btn-action btn-download"
+  @click="generarInforme"
+/>
+
+<q-btn
+  dense
+  flat
+  :loading="loadingDelete"
+  icon="delete"
+  label="Eliminar"
+  class="btn-action btn-delete"
+  @click="eliminarNotificacioness"
+/>
+
+    </div>
+
+    <div class="alerts" v-if="notificationsFiltradas.length">
       <div
-        v-for="n in notifications"
+        v-for="n in notificationsFiltradas"
         :key="n._id"
         class="alertCard"
         :style="getCardStyle(n)"
@@ -27,42 +81,93 @@
       </div>
     </div>
 
-    <p v-else class="noAlerts">No hay notificaciones</p>
+    <p v-else class="noAlerts">
+      {{ notifications.length > 0 ? 'No hay notificaciones con los filtros aplicados' : 'No hay notificaciones' }}
+    </p>
 
   </Layouts_main>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import Layouts_main from "../layouts/layouts_main.vue";
 import { Notify } from "quasar";
-import { getUserById, getNotifications,deleteNotifications } from "../services/servicesComponent";
+import { getUserById, getNotifications, deleteNotifications } from "../services/servicesComponent";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAdminStore } from "../store/administrador.js";
 
-
+const adminStore = useAdminStore();
 
 const stateMap = {
-   1: { label: "En Desarrollo", color: "blue" },
+  1: { label: "En Desarrollo", color: "blue" },
   2: { label: "En Revisión", color: "orange" },
   3: { label: "Completada", color: "green" },
   4: { label: "Rechazada", color: "red" },
   5: { label: "Vencida", color: "grey" }
 };
-const loading = ref(false)
+
+const loading = ref(false);
+const loadingDelete = ref(false);
 const defaultColor = "#4CAF50";
 const notifications = ref([]);
 const user = ref({ rol: "", area: "" });
 const roles = { 1: "Super Admin", 2: "Administrador", 3: "Usuario" };
 let pollingInterval = null;
-import { useAdminStore } from "../store/administrador.js";
-const adminStore = useAdminStore();
+
+// Filtros
+const filtroEstado = ref(null);
+const filtroTipo = ref(null);
+
+const estadoOptions = [
+  { label: "Todos los estados", value: null },
+  { label: "En Desarrollo", value: 1 },
+  { label: "En Revisión", value: 2 },
+  { label: "Completada", value: 3 },
+  { label: "Rechazada", value: 4 },
+  { label: "Vencida", value: 5 }
+];
+
+const tipoOptions = [
+  { label: "Todos los tipos", value: null },
+  { label: "Has cambiado estado", value: "cambio_propio" },
+  { label: "Han cambiado estado", value: "cambio_otro" }
+];
+
+// Notificaciones filtradas
+const notificationsFiltradas = computed(() => {
+  let result = notifications.value;
+
+  // Filtrar por estado
+  if (filtroEstado.value && filtroEstado.value.value !== null) {
+    result = result.filter(n => {
+      const matches = n.description.match(/\d+/g);
+      const lastState = matches ? Number(matches[matches.length - 1]) : null;
+      return lastState === filtroEstado.value.value;
+    });
+  }
+
+  // Filtrar por tipo (quien hizo el cambio)
+  if (filtroTipo.value && filtroTipo.value.value !== null) {
+    result = result.filter(n => {
+      if (filtroTipo.value.value === "cambio_propio") {
+        return n.title === "Has cambiado el estado de la tarea" || n.title === "Has creado una nueva tarea";
+      } else {
+        return n.title === "Han cambiado el estado de la tarea" || n.title === "Te han asignado una nueva tarea";
+      }
+    });
+  }
+
+  return result;
+});
 
 
-// EXTRAE LOS NÚMEROS DEL TEXTO PARA EL COLOR
+const limpiarFiltros = () => {
+  filtroEstado.value = null;
+  filtroTipo.value = null;
+};
 
 const getCardStyle = (n) => {
-  // Buscamos el último número en la descripción (el estado nuevo)
   const matches = n.description.match(/\d+/g);
   const lastState = matches ? matches[matches.length - 1] : null;
   const color = stateMap[Number(lastState)]?.color || defaultColor;
@@ -73,13 +178,10 @@ const getCardStyle = (n) => {
   };
 };
 
-// REEMPLAZA LOS NÚMEROS POR TEXTO EN LA DESCRIPCIÓN
-
 const processDescription = (desc) => {
   if (!desc) return "";
   
   let newDesc = desc;
-  // Buscamos todos los números y los reemplazamos por su etiqueta del mapa
   Object.keys(stateMap).forEach(id => {
     const regex = new RegExp(`\\b${id}\\b`, 'g');
     newDesc = newDesc.replace(regex, stateMap[id].label);
@@ -89,21 +191,26 @@ const processDescription = (desc) => {
 };
 
 const cargarNotificaciones = async () => {
-  const rol = Number(localStorage.getItem("rol"));
-  const userId = localStorage.getItem("userId");
-  const areaId = localStorage.getItem("areaId");
+  try {
+    const rol = Number(localStorage.getItem("rol"));
+    const userId = localStorage.getItem("userId");
 
-  const params = { rol };
+    // ✅ TODOS los roles ven solo SUS propias notificaciones
+    const params = { 
+      rol,
+      userId // Siempre enviamos userId
+    };
 
-  if (rol === 3) params.userId = userId;
-  if (rol === 2) params.areaId = areaId;
-
-  notifications.value = await getNotifications(params);
+    notifications.value = await getNotifications(params);
+  } catch (error) {
+    console.error("Error al cargar notificaciones:", error);
+  }
 };
-
 
 onMounted(async () => {
   adminStore.countNotifications = 0;
+  adminStore.totalLeidoLocal = 0; 
+  
   try {
     const id = localStorage.getItem("userId");
     if (!id) return;
@@ -117,17 +224,22 @@ onMounted(async () => {
   }
 });
 
-onUnmounted(() => { if (pollingInterval) clearInterval(pollingInterval); });
+onUnmounted(() => { 
+  if (pollingInterval) clearInterval(pollingInterval); 
+});
+
 const generarInforme = () => {
   loading.value = true;
-  if (!notifications.value.length) {
+  const dataParaInforme = notificationsFiltradas.value;
+  
+  if (!dataParaInforme.length) {
+    loading.value = false;
     Notify.create({
       type: "warning",
       message: "No hay notificaciones para exportar"
     });
     return;
   }
-  
 
   const doc = new jsPDF();
 
@@ -138,8 +250,15 @@ const generarInforme = () => {
   doc.text(`Área: ${user.value.area}`, 14, 22);
   doc.text(`Rol: ${user.value.rol}`, 14, 28);
   doc.text(`Fecha: ${new Date().toLocaleString()}`, 14, 34);
+  
+  if (filtroEstado.value || filtroTipo.value) {
+    let filtros = "Filtros aplicados: ";
+    if (filtroEstado.value) filtros += `Estado: ${filtroEstado.value.label}`;
+    if (filtroTipo.value) filtros += ` | Tipo: ${filtroTipo.value.label}`;
+    doc.text(filtros, 14, 40);
+  }
 
-  const tableData = notifications.value.map(n => [
+  const tableData = dataParaInforme.map(n => [
     n.title,
     n.nameTask,
     processDescription(n.description),
@@ -147,16 +266,17 @@ const generarInforme = () => {
   ]);
 
   autoTable(doc, {
-    startY: 40,
+    startY: filtroEstado.value || filtroTipo.value ? 46 : 40,
     head: [["Título", "Tarea", "Descripción", "Fecha"]],
     body: tableData,
     styles: { fontSize: 9 },
     headStyles: { fillColor: [76, 175, 80] }
   });
-  loading.value =false;
-
+  
+  loading.value = false;
   doc.save("informe_notificaciones.pdf");
 };
+
 const eliminarNotificacioness = async () => {
   if (!notifications.value.length) {
     Notify.create({
@@ -167,33 +287,38 @@ const eliminarNotificacioness = async () => {
   }
 
   try {
-    const rol = String(localStorage.getItem("rol"));
+    loadingDelete.value = true;
     const userId = localStorage.getItem("userId");
-    const areaId = localStorage.getItem("areaId");
 
-    const params = { rol };
-    if (rol === "3") params.userId = userId;
-    if (rol === "2") params.areaId = areaId;
+    if (!userId) {
+      throw new Error("No se encontró el ID de usuario");
+    }
 
-    await deleteNotifications(params);
+    const result = await deleteNotifications({ userId });
 
-    notifications.value = []; //  LIMPIA LA LISTA
+    notifications.value = [];
+    adminStore.countNotifications = 0;
+    adminStore.totalLeidoLocal = 0; 
 
     Notify.create({
       type: "positive",
-      message: "Notificaciones eliminadas correctamente"
+      message: result.message || "Notificaciones eliminadas correctamente"
     });
+    
   } catch (error) {
+    console.error(error);
     Notify.create({
       type: "negative",
       message: "Error al eliminar las notificaciones"
     });
+  } finally {
+    loadingDelete.value = false;
   }
 };
-
-
 </script>
 
 <style scoped>
 @import url("../style/notify.css");
+
+
 </style>

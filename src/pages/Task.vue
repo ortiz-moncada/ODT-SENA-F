@@ -3,7 +3,7 @@
 
   <div v-if="showEntrega" class="overlay"></div>
 
-  <div v-if="showEntrega" class="modal">
+ <!--  <div v-if="showEntrega" class="modal">
     <div class="headed">
       <h2 style="text-align: center;">ENTREGAR TAREA</h2>
     </div>
@@ -33,9 +33,9 @@
       </div>
     </div>
 
-    <button class="create-btn" @click="entregarTarea">ENTREGAR</button>
+    <q-btn :loading="loading" class="create-btn" @click="entregarTarea">ENTREGAR</q-btn>
     <button class="close-btn-m" @click="showEntrega = false">CERRAR</button>
-  </div>
+  </div> -->
 
   <div v-if="showCreate" class="modal">
     <div class="headed">
@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <button class="create-btn" @click="crearTarea">CREAR</button>
+    <q-btn :loading="loading" class="create-btn" @click="crearTarea">CREAR</q-btn>
     <button class="close-btn-m" @click="showCreate = false">CERRAR</button>
   </div>
 
@@ -104,7 +104,6 @@
       { label: 'En Revisión', value: 2 },
       { label: 'Completada', value: 3 },
       { label: 'Rechazada', value: 4 },
-      { label: 'Vencida', value: 5 },
     ]" label="Estado de la tarea" emit-value map-options />
 
     <q-btn :loading="loading" class="create-btn" @click="actualizarTarea">ACTUALIZAR</q-btn>
@@ -229,9 +228,6 @@
         <q-item clickable v-close-popup @click="setEstado(4, 'Rechazada')">
           <q-item-section>Rechazada</q-item-section>
         </q-item>
-        <q-item clickable v-close-popup @click="setEstado(5, 'Vencida')">
-          <q-item-section>Vencida</q-item-section>
-        </q-item>
       </q-list>
     </q-btn-dropdown>
 
@@ -243,16 +239,26 @@
         :rows="filteredTasks" :columns="columns" row-key="_id" v-model:pagination="pagination"
         :rows-per-page-options="[0]" :no-data-label="' '">
 
-        <template v-slot:body-cell-opcions="props">
-          <q-td :props="props" class="text-center">
-            <q-btn v-if="rol != 3" size="sm" color="primary" icon="edit" round dense class="q-ml-sm"
-              @click="abrirEditar(props.row)" />
-            <q-btn v-if="rol === 3 && esLider(props.row)" size="sm" color="green" icon="upload" round dense
-              class="q-ml-sm" @click="abrirEntregaWorker(props.row)" />
-            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
-              @click="verDetalles(props.row)" />
-          </q-td>
-        </template>
+       <template v-slot:body-cell-opcions="props">
+  <q-td :props="props" class="text-center">
+    <q-btn v-if="rol != 3" size="sm" color="primary" icon="edit" round dense class="q-ml-sm"
+      @click="abrirEditar(props.row)" />
+
+    <q-btn 
+      v-if="rol === 3 && esLider(props.row) && props.row.stateTask !== 3 && props.row.stateTask !== 5" 
+      size="sm" 
+      color="green" 
+      icon="upload" 
+      round 
+      dense
+      class="q-ml-sm" 
+      @click="abrirEntregaWorker(props.row)" 
+    />
+
+    <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
+      @click="verDetalles(props.row)" />
+  </q-td>
+</template>
 
         <template v-slot:body-cell-stateTask="props">
           <q-td :props="props">
@@ -401,7 +407,6 @@ const entregarTareaWorker = async () => {
     
     await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData);
 
-    // --- AGREGAR ESTO PARA NOTIFICAR AL ADMIN ---
     // Notificamos al creador de la tarea (tribute_id)
     await createNotification({
       title: "Tarea Entregada (Para Revisión)",
@@ -411,15 +416,12 @@ const entregarTareaWorker = async () => {
       user_id: tareaEntrega.value.tribute_id, // El admin que la creó
       area_id: areaId
     });
-    // ----------------------------------------------
-
+    loading.value = false;
     Notify.create({ type: 'positive', message: 'Tarea entregada correctamente' });
     showEntregaWorker.value = false;
     await obtenerTareas();
   } catch (error) {
-    // ... tu manejo de errores actual
-  } finally {
-    loading.value = false;
+   console.error(error) 
   }
 };
 
@@ -475,7 +477,7 @@ const crearTarea = async () => {
     if (!name.value || !description.value || workers.value.length === 0) {
       return Notify.create({ type: 'negative', message: 'Complete campos obligatorios' })
     }
-    
+        loading.value = true;
     const payload = {
       name: name.value,
       description: description.value,
@@ -508,11 +510,10 @@ const crearTarea = async () => {
       })
     }
     
+        loading.value = false;
     Notify.create({ type: 'positive', message: 'Tarea creada' })
     showCreate.value = false
     obtenerTareas()
-    
-    // ✅ Limpiar formulario
     name.value = ''
     description.value = ''
     date.value = ''
@@ -540,6 +541,7 @@ const verDetalles = (task) => { selectedTask.value = task; showDetails.value = t
 
 const actualizarTarea = async () => {
   try {
+        loading.value = true;
     await putTasks(editId.value, {
       name: editName.value,
       description: editDescription.value,
@@ -547,15 +549,12 @@ const actualizarTarea = async () => {
       delivery_date: editDate.value,
       stateTask: editState.value
     });
-
-    // --- AGREGAR ESTO PARA GENERAR NOTIFICACIÓN ---
     const estadoTexto = stateMap[editState.value]?.label || "actualizado";
     
     for (const workerId of editWorkers.value) {
       await createNotification({
         title: `Estado actualizado: ${estadoTexto}`,
         nameTask: editName.value,
-        // Usamos el número del estado al final para que tu lógica de colores en notify.vue funcione
         description: `La tarea cambió al estado: ${editState.value}`, 
         deliveryDate: editDate.value,
         task_id: editId.value,
@@ -563,8 +562,8 @@ const actualizarTarea = async () => {
         area_id: areaId
       });
     }
-    // ----------------------------------------------
 
+    loading.value = false;
     Notify.create({ type: 'positive', message: 'Tarea actualizada' });
     showEdit.value = false; 
     obtenerTareas();

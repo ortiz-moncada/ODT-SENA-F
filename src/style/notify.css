@@ -1,76 +1,143 @@
-.inf{
-    display: grid;
-    color: var(--oneColor--);
-    grid-template-columns: 50% 50%;
-    width: 80%;
-    margin-left: 9%;
-    height: 90px;
-    border-radius: 10px;
-     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-.mInfo{
-margin-left: 11%
-}
-.tInfo{
-margin-top:0%;
-font-size:large;
-margin-left: 2%;
-color: var(--oneColor--);
-
-}
-.alerts{
-  margin: 2%;
-}
-.contemAlerts{
-    width: 80%;
-    margin-left: 9%;
-    margin-top: 2%;
-    border-radius: 10px;
-    height: 60vh;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    padding-top: 2%;
-    overflow-y:auto ;
-    scrollbar-width:thin;         
-    scrollbar-color:transparent;
+/* ===== INFO USUARIO ===== */
+.mInfo {
+  margin: 1.5% auto;
+  width: 80%;
+  display: flex;
+  gap: 40px;
 }
 
+.tInfo {
+  font-size: 1.1rem;
+  color: var(--oneColor--);
+  font-weight: 600;
+}
+
+/* ===== FILTROS ===== */
+.filters {
+  width: 80%;
+  margin: 2% auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filters .q-select {
+  background: var(--White--);
+  border-radius: 6px;
+}
+
+/* ===== CONTENEDOR ALERTAS ===== */
+.alerts {
+  width: 80%;
+  margin: 2% auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== TARJETA ===== */
 .alertCard {
   background: var(--White--);
-  box-shadow: rgb(6, 6, 6) 0px 0px 10px 0px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  padding: 16px 18px;
   position: relative;
-  padding: 12px;
-  margin-bottom: 2%;
-  border-radius: 6px;
-  width: 70%;
-  height: 130px;
-  margin-left: 13%;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .alertCard:hover {
-  transform: scale(1.03); /* crece un poco */
-/*   box-shadow: rgba(0, 0, 0, 0.25) 0px 8px 20px; */
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
 }
 
+/* ===== TEXTO ===== */
 .alertCard h4 {
   margin: 0;
+  font-size: 1rem;
   font-weight: 700;
+  color: var(--oneColor--);
 }
 
-.alertCard small {
-  color: #777;
+.alertCard h3 {
+  margin: 6px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
-.noAlerts {
-  text-align: center;
-  color: #999;
-  margin-top: 20px;
+.alertCard p {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.4;
 }
 
+/* ===== FECHA ===== */
 .date {
   position: absolute;
-  top: 12%;
-  left: 80%;
-  font-size: 12px;
+  top: 14px;
+  right: 18px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* ===== SIN NOTIFICACIONES ===== */
+.noAlerts {
+  text-align: center;
+  font-size: 1rem;
   color: #999;
+  margin-top: 40px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .mInfo,
+  .filters,
+  .alerts {
+    width: 95%;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date {
+    position: static;
+    display: block;
+    margin-top: 6px;
+  }
+}
+
+
+.btn-action {
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: none;
+  transition: all 0.25s ease;
+}
+
+/* Descargar */
+.btn-download {
+  background: var(--oneColor--);
+  color: var(--white--);
+}
+
+.btn-download:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Eliminar */
+.btn-delete {
+  background: var(--sevenColor--);
+  color: var(--white--);
+}
+
+.btn-delete:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }

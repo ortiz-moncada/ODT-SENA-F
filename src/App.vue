@@ -16,34 +16,31 @@ let globalPolling = null;
 const checkNotifications = async () => {
   const userId = localStorage.getItem("userId");
   const rol = Number(localStorage.getItem("rol"));
-  const areaId = localStorage.getItem("areaId");
-
+  
   if (!userId) return;
+  
+  const params = { rol, userId };
 
-  const params = { rol };
-  if (rol === 3) params.userId = userId;
-  if (rol === 2) params.areaId = areaId;
-
-try {
+  try {
     const data = await getNotifications(params);
     const totalEnServidor = data.length;
-
-    // Calculamos el número real para la campana:
-    // Es el total del servidor MENOS lo que el usuario ya marcó como visto localmente
+    
+    if (totalEnServidor === 0) {
+      adminStore.totalLeidoLocal = 0;
+      adminStore.countNotifications = 0;
+      lastCount.value = 0;
+      return;
+    }
+    
     const nuevasParaMostrar = totalEnServidor - adminStore.totalLeidoLocal;
-
-    // Actualizamos el contador de la campana (asegurando que no sea negativo)
     adminStore.countNotifications = nuevasParaMostrar > 0 ? nuevasParaMostrar : 0;
-
-    // SONIDO: Solo si el total del servidor aumentó desde la última vez que revisamos
+    
     if (lastCount.value !== null && totalEnServidor > lastCount.value) {
        notificationSound.currentTime = 0;
        notificationSound.play().catch(e => console.warn("Sonido bloqueado"));
     }
-
-    // Guardamos este total para la siguiente comparación de sonido
+    
     lastCount.value = totalEnServidor;
-
   } catch (error) {
     console.error("Error en polling:", error);
   }

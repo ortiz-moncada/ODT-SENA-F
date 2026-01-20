@@ -326,7 +326,6 @@ export async function getData() {
 
 
 // NOTIFICACIONES
-
 export async function createNotification(notificationData) {
   try {
     const res = await api.post(
@@ -372,8 +371,15 @@ export async function deleteNotification(id) {
 
 export async function deleteNotifications(params = {}) {
   try {
+    // Asegurar que siempre se envíe el userId
+    const userId = params.userId || localStorage.getItem("userId");
+    
+    if (!userId) {
+      throw new Error("No se encontró el ID de usuario");
+    }
+
     const res = await api.delete("/notify", {
-      params,
+      params: { userId }, // Solo enviamos userId, sin importar el rol
       ...getAuthHeaders()
     });
     return res.data;
