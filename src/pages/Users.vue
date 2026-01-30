@@ -1,221 +1,279 @@
 <template>
-  <div v-if="showCreate" class="overlay"></div>
+  <!-- ================= OVERLAY ================= -->
+  <div v-if="showCreate || showEditModal || showDetails" class="overlay"></div>
 
-  <!-- MODAL CREAR USUARIO -->
-  <div v-if="fromUsers" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Crear Usuario</h2>
+  <!-- ================= MODAL CREAR USUARIO ================= -->
+  <div v-if="showCreate" class="modal">
+
+    <div class="modal-header">
+      <h2>Crear Usuario</h2>
     </div>
 
-    <div class="contemInputs-1">
-      <q-input class="name" filled v-model="name" :dense="dense" name="names" label="Nombre de Usuario"
-        style="background: var(--white--);" />
-      <q-input class="identification" filled v-model="identification" :dense="dense" name="identification"
-        label="Ingrese número de cédula" style="background: var(--white--);" />
+    <div class="modal-body">
+      <div class="form-grid">
 
-      <q-select class="rol" filled v-model="model" :options="Rol" label="Rol" style="background: var(--white--);" />
-
-      <q-input class="phone" filled v-model="phone" :dense="dense" name="phone" label="Ingrese número de celular"
-        style="background: var(--white--);" />
-      <q-input class="gmail" filled v-model="gmail" name="gmail" label="Correo electrónico" :dense="dense"
-        style="background: var(--white--);" />
-      <q-input class="password" filled v-model="password" :dense="dense" name="password" label="Contraseña"
-        style="background: var(--white--);" />
-
-      <q-input class="Cp" v-model="confirmPassword" filled :type="isPwd ? 'password' : 'text'"
-        label="Confirmación de contraseña" style="background: var(--white--);">
-        <template v-slot:append>
-          <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwd = !isPwd" />
-        </template>
-      </q-input>
-
-      <q-select class="area" v-if="model && model.value === 3 && userLog?.rol !== 2" filled v-model="selectedArea"
-        :options="areas" label="Seleccione área" :dense="dense" option-label="label" option-value="value" clearable
-        style="background: var(--white--);" />
-    </div>
-
-    <q-btn class="create-btn" :loading="loading" @click="crearUser">CREAR</q-btn>
-    <button class="close-btn-m" @click="cerrarModal">CERRAR</button>
-  </div>
-
-  <!-- MODAL EDITAR USUARIO -->
-  <div v-if="showEditModal" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Editar Usuario</h2>
-    </div>
-
-    <div class="contemInputs-1">
-      <q-input class="name" filled v-model="editForm.names" :dense="dense" label="Nombre de Usuario"
-        style="background: var(--white--);" />
-
-      <q-input class="identification" filled v-model="editForm.identification" :dense="dense" label="Número de cédula"
-        style="background: var(--white--);" />
-
-      <q-select class="rol" filled v-model="editForm.rol" :options="RolEdit" label="Rol"
-        style="background: var(--white--);" />
-
-      <q-input class="phone" filled v-model="editForm.phone" :dense="dense" label="Número de celular"
-        style="background: var(--white--);" />
-
-      <q-input class="gmail" filled v-model="editForm.gmail" label="Correo electrónico" :dense="dense"
-        style="background: var(--white--);" />
-
-      <q-input class="password" filled v-model="editForm.password" :type="isPwdEdit ? 'password' : 'text'"
-        :dense="dense" label="Nueva contraseña (opcional)" style="background: var(--white--);"
-        hint="Dejar en blanco para no cambiar">
-        <template v-slot:append>
-          <q-icon :name="isPwdEdit ? 'visibility_off' : 'visibility'" class="cursor-pointer"
-            @click="isPwdEdit = !isPwdEdit" />
-        </template>
-      </q-input>
-
-      <q-select class="area" v-if="editForm.rol && editForm.rol.value === 3 && userLog?.rol !== 2" filled
-        v-model="editForm.selectedArea" :options="areas" label="Seleccione área" :dense="dense" option-label="label"
-        option-value="value" clearable style="background: var(--white--);" />
-    </div>
-
-    <q-btn class="create-btn" :loading="loading" @click="actualizarUsuario">ACTUALIZAR</q-btn>
-    <button class="close-btn-m" @click="cerrarModalEditar">CERRAR</button>
-  </div>
-
-  <!-- MODAL DETALLES -->
-  <div v-if="showDetails" class="overlay"></div>
-
-  <div v-if="showDetails" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Detalles del Usuario</h2>
-    </div>
-    <div class="contemInputs">
-
-      <div class="infoP">
-        <h3 style="font-weight:800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 29%;"
-            src="https://cdn-icons-png.flaticon.com/128/8237/8237612.png">
-          Información personal
-        </h3>
-        <p><b>Nombre</b> {{ selectedUser.names }}</p>
-        <p><b>Cedula</b> {{ selectedUser.identification }}</p>
-      </div><br>
-
-      <div class="infoC">
-        <h3 style="font-weight: 800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px;margin-left: 14%;"
-            src="https://cdn-icons-png.flaticon.com/128/4350/4350908.png">
-          Contacto
-        </h3>
-        <p> <b>Correo </b> {{ selectedUser.gmail }}</p>
-        <p> <b>Telefono </b> {{ selectedUser.phone }}</p>
-        <br>
-      </div>
-
-      <div class="infoL">
-        <h3 style="font-weight: 800;">
-          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 55%;"
-            src="https://cdn-icons-png.flaticon.com/128/9901/9901586.png">
-          Información laboral
-        </h3>
-        <p><b>Area</b> {{ selectedUser.areaName || 'Sin área' }}</p>
-        <p><b>Descripción:</b> {{ selectedUser.areaDescription }}</p>
-        <p><b>Rol</b> {{ getRolName(selectedUser.rol) }}</p>
-        <div>
-          <p>
-            <b>Estado</b>
-            <q-chip :label="stateMap[selectedUser.state]?.label" :color="stateMap[selectedUser.state]?.color"
-              text-color="white" size="sm" class="q-mx-sm" />
-          </p>
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="form-col">
+          <q-input filled v-model="name" label="Nombre de usuario" />
+          <q-input filled v-model="identification" label="Cédula" />
+          <q-input filled v-model="phone" label="Celular" />
+          <q-input filled v-model="gmail" label="Correo electrónico" />
         </div>
-      </div><br><br>
+
+        <!-- COLUMNA DERECHA -->
+        <div class="form-col">
+          <q-select filled v-model="model" :options="Rol" label="Rol" />
+          <q-input filled v-model="password" type="password" label="Contraseña" />
+          <q-input filled v-model="confirmPassword" type="password" label="Confirmar contraseña" />
+
+          <q-select
+            v-if="model && model.value === 3 && userLog?.rol !== 2"
+            filled
+            v-model="selectedArea"
+            :options="areas"
+            option-label="label"
+            option-value="value"
+            label="Área"
+            clearable
+          />
+        </div>
+
+      </div>
     </div>
 
-    <button class="close-btn" @click="showDetails = false">CERRAR</button>
+    <div class="modal-footer">
+      <q-btn
+        :loading="loading"
+        label="CREAR"
+        style="background: var(--oneColor--); color: white"
+        @click="crearUser"
+      />
+      <q-btn
+        flat
+        label="CANCELAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="cerrarModal"
+      />
+    </div>
+
   </div>
 
-  <!-- LISTADO -->
+  <!-- ================= MODAL EDITAR USUARIO ================= -->
+  <div v-if="showEditModal" class="modal">
+
+    <div class="modal-header">
+      <h2>Editar Usuario</h2>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <div class="form-col">
+          <q-input filled v-model="editForm.names" label="Nombre" />
+          <q-input filled v-model="editForm.identification" label="Cédula" />
+          <q-input filled v-model="editForm.phone" label="Celular" />
+        </div>
+
+        <div class="form-col">
+          <q-select filled v-model="editForm.rol" :options="RolEdit" label="Rol" />
+          <q-input filled v-model="editForm.gmail" label="Correo" />
+          <q-input
+            filled
+            v-model="editForm.password"
+            type="password"
+            label="Nueva contraseña (opcional)"
+          />
+
+          <q-select
+            v-if="editForm.rol && editForm.rol.value === 3 && userLog?.rol !== 2"
+            filled
+            v-model="editForm.selectedArea"
+            :options="areas"
+            label="Área"
+            clearable
+          />
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <q-btn
+        :loading="loading"
+        label="ACTUALIZAR"
+        style="background: var(--oneColor--); color: white"
+        @click="actualizarUsuario"
+      />
+      <q-btn
+        flat
+        label="CERRAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="cerrarModalEditar"
+      />
+    </div>
+  </div>
+
+  <!-- ================= MODAL DETALLES ================= -->
+  <div v-if="showDetails" class="modal-details">
+
+    <div class="modal-header-details">
+      <h2>Detalles del Usuario</h2>
+    </div>
+
+    <div class="modal-body-details">
+      <div class="details-grid">
+
+        <!-- INFO PERSONAL -->
+        <div class="card">
+          <h3 class="card-title">
+            Información Personal
+            <img src="https://cdn-icons-png.flaticon.com/128/8237/8237612.png" />
+          </h3>
+          <p><span>Nombre:</span> {{ selectedUser.names }}</p>
+          <p><span>Cédula:</span> {{ selectedUser.identification }}</p>
+        </div>
+
+        <!-- CONTACTO -->
+        <div class="card">
+          <h3 class="card-title">
+            Contacto
+            <img src="https://cdn-icons-png.flaticon.com/128/4350/4350908.png" />
+          </h3>
+          <p><span>Correo:</span> {{ selectedUser.gmail }}</p>
+          <p><span>Teléfono:</span> {{ selectedUser.phone }}</p>
+        </div>
+
+        <!-- INFO LABORAL -->
+        <div class="card">
+          <h3 class="card-title">
+            Información Laboral
+            <img src="https://cdn-icons-png.flaticon.com/128/9901/9901586.png" />
+          </h3>
+          <p><span>Área:</span> {{ selectedUser.areaName || 'Sin área' }}</p>
+          <p><span>Rol:</span> {{ getRolName(selectedUser.rol) }}</p>
+
+          <div class="estado">
+            <span>Estado:</span>
+            <q-chip
+              :label="stateMap[selectedUser.state]?.label"
+              :color="stateMap[selectedUser.state]?.color"
+              text-color="white"
+              size="sm"
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-footer-details">
+      <q-btn
+        label="CERRAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="showDetails = false"
+      />
+    </div>
+
+  </div>
+
+  <!-- ================= LISTADO ================= -->
   <Layouts_main>
-    <h1 style="text-align: center; margin-top: -2%;" :style="{ color: 'var(--oneColor--)' }">USUARIOS</h1>
+    <h1 style="text-align: center;" :style="{ color: 'var(--oneColor--)' }">USUARIOS</h1>
     <hr><br>
 
-    <div class="filters">
-      <q-btn-dropdown class="LP" :label="ordenarLabel">
+    <div class="header-principal">
+      <q-input
+        v-model="search"
+        dense
+        outlined
+        style="max-width: 400px"
+        label="BUSCAR USUARIO"
+      >
+        <template v-slot:append>
+          <q-btn flat dense round>
+            <img
+              src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
+              style="width: 18px"
+            />
+          </q-btn>
+        </template>
+      </q-input>
+
+      <q-btn-dropdown :label="ordenarLabel">
         <q-list>
           <q-item clickable v-close-popup @click="setOrden('asc', 'A → Z')">
-            <q-item-section><q-item-label>A → Z</q-item-label></q-item-section>
+            <q-item-section>A → Z</q-item-section>
           </q-item>
           <q-item clickable v-close-popup @click="setOrden('desc', 'Z → A')">
-            <q-item-section><q-item-label>Z → A</q-item-label></q-item-section>
+            <q-item-section>Z → A</q-item-section>
           </q-item>
         </q-list>
       </q-btn-dropdown>
 
-      <q-btn-dropdown class="IA" :label="estadoLabel">
+      <q-btn-dropdown :label="estadoLabel">
         <q-list>
-          <q-item clickable v-close-popup @click="setEstado(1, 'Activos')">Activos</q-item>
-          <q-item clickable v-close-popup @click="setEstado(2, 'Inactivos')">Inactivos</q-item>
+          <q-item clickable v-close-popup @click="setEstado(1, 'Activos')">
+            <q-item-section>Activos</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="setEstado(2, 'Inactivos')">
+            <q-item-section>Inactivos</q-item-section>
+          </q-item>
         </q-list>
       </q-btn-dropdown>
-    </div><br><br>
 
-    <q-input v-model="search" dense outlined
-      style="width: 400px; margin-left: 2%; position: absolute; margin-top: -2.5%;" label="INGRESE NOMBRE DE USUARIO">
-      <template v-slot:append>
-        <q-btn flat dense round>
-          <img
-            src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
-            style="width: 18px; height: 18px;" />
-        </q-btn>
-      </template>
-    </q-input>
-    <br>
-
-    <q-btn :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }" label="CREAR +"
-      style="position: absolute; margin-left: 75%; margin-top: -4%;" @click="abrirModal" />
+      <q-btn
+        :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }"
+        label="CREAR +"
+        @click="abrirModal"
+      />
+    </div>
 
     <div class="q-pa-md">
-      <q-table style="text-align: center; height: 400px; width: 97%; margin-left: 1%;" flat bordered :key="refreshKey"
-        :rows="filteredUsers" :columns="columns" row-key="index" v-model:pagination="pagination"
-        :rows-per-page-options="[0]" :no-data-label="' '">
-
+      <q-table
+        flat
+        bordered
+        :rows="filteredUsers"
+        :columns="columns"
+        row-key="_id"
+        v-model:pagination="pagination"
+        :rows-per-page-options="[0]"
+        :no-data-label="' '"
+      >
 
         <template v-slot:body-cell-opcions="props">
           <q-td :props="props" class="text-center">
-            <q-btn size="sm" :color="props.row.state === 1 ? 'negative' : 'green'"
-              :icon="props.row.state === 1 ? 'close' : 'check'" round dense class="q-ml-sm"
-              @click="toggleEstado(props.row)" />
-            <q-btn size="sm" color="primary" icon="edit" round dense class="q-ml-sm"
+            <q-btn
+              size="sm"
+              :color="props.row.state === 1 ? 'negative' : 'green'"
+              :icon="props.row.state === 1 ? 'close' : 'check'"
+              round dense
+              @click="toggleEstado(props.row)"
+            />
+            <q-btn size="sm" color="primary" icon="edit" round dense
               @click="editarUsuario(props.row)" />
-            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
+            <q-btn size="sm" color="secondary" icon="visibility" round dense
               @click="verDetalles(props.row)" />
           </q-td>
         </template>
 
         <template v-slot:body-cell-state="props">
           <q-td :props="props">
-            <q-chip :label="stateMap[props.row.state]?.label" :color="stateMap[props.row.state]?.color"
-              text-color="white" size="sm" class="q-mx-sm" />
-          </q-td>
-        </template>
-
-        <template v-slot:body-cell-area="props">
-          <q-td :props="props">
-            {{ props.row.areaName || 'Sin área' }}
+            <q-chip
+              :label="stateMap[props.row.state]?.label"
+              :color="stateMap[props.row.state]?.color"
+              text-color="white"
+              size="sm"
+            />
           </q-td>
         </template>
 
         <template v-slot:no-data>
-          <div class="full-width text-grey-7" style="margin-top: -22%;">
-            <q-icon size="40px" class="q-mr-sm" />
-            <img src="../IMG/pregunta (1).png" alt="" style="max-width: 15%;">
-
-            <span v-if="userData.length === 0">
-              No hay usuarios registrados
-            </span>
-
-            <span v-else>
-              <h3 style="margin-left: 5%;"> No hay usuarios con los filtros aplicados</h3>
-            </span>
+          <div class="full-width column flex-center text-grey-7 q-pa-lg">
+            <img src="../IMG/pregunta (1).png" style="max-width: 15%" />
+            <h5 v-if="userData.length === 0">No hay usuarios registrados</h5>
+            <h5 v-else>No hay usuarios con los filtros aplicados</h5>
           </div>
         </template>
-
 
       </q-table>
     </div>
@@ -406,7 +464,6 @@ const cerrarModalEditar = () => {
 
 const crearUser = async () => {
   try {
-    showCreate.value = true;
     if (!name.value || !gmail.value || !phone.value || !password.value || !identification.value) {
       Notify.create({ position: "top", type: 'negative', message: 'Por favor completa todos los campos obligatorios' });
       return;
@@ -423,48 +480,38 @@ const crearUser = async () => {
     }
 
     if (model.value.value === 3) {
-      if (userLog.value?.rol === 2) {
-        if (!userLog.value.areaId) {
-          Notify.create({
-            position: "top",
-            type: 'negative',
-            message: 'Error: el admin no tiene área asignada'
-          });
-          return;
-        }
-      } else {
-        if (!selectedArea.value?.value) {
-          Notify.create({
-            position: "top",
-            type: 'negative',
-            message: 'Por favor seleccionar un área'
-          });
-          return;
-        }
+      if (userLog.value?.rol === 2 && !userLog.value.areaId) {
+        Notify.create({ position: "top", type: 'negative', message: 'Error: el admin no tiene área asignada' });
+        return;
+      } else if (userLog.value?.rol !== 2 && !selectedArea.value?.value) {
+        Notify.create({ position: "top", type: 'negative', message: 'Por favor seleccionar un área' });
+        return;
       }
     }
+
     loading.value = true;
-    const dataUser = {
-      names: name.value.trim(),
-      identification: identification.value.trim(),
-      gmail: gmail.value.trim(),
-      phone: Number(phone.value),
-      password: password.value,
-      rol: model.value.value,
-      state: 1
+
+    const payload = {
+      data: {
+        names: name.value.trim(),
+        identification: identification.value.trim(),
+        gmail: gmail.value.trim(),
+        phone: String(phone.value), 
+        password: password.value,
+        rol: model.value.value,
+        state: 1
+      }
     };
 
     if (model.value.value === 3) {
-      if (userLog.value?.rol === 2) {
-        dataUser.areaId = userLog.value.areaId;
-      } else {
-        dataUser.areaId = selectedArea.value.value;
-      }
+      payload.data.areaId = userLog.value?.rol === 2 
+        ? userLog.value.areaId 
+        : selectedArea.value.value;
     }
 
-    const newUser = { data: dataUser };
 
-    await registerUser(newUser);
+    console.log("Enviando a registro:", payload);
+    await registerUser(payload);
 
     Notify.create({
       position: "top",
@@ -476,21 +523,26 @@ const crearUser = async () => {
     userData.value = res.map((user, index) => ({
       ...user,
       index: index + 1,
-      areaName: user.areaName || user.areaId?.name || 'Sin área'
+      areaName: user.areaName || 'Sin área'
     }));
-    refreshKey.value++;
-    loading.value = false;
-    limpiarFormulario();
-    fromUsers.value = false;
 
+    refreshKey.value++;
+    cerrarModal(); 
 
   } catch (error) {
+    console.error("Error al crear usuario:", error.response?.data);
+
+    const errorMsg = error.response?.data?.errors?.[0]?.msg || 
+                     error.response?.data?.errors?.[0]?.mensaje || 
+                     'Error al crear usuario';
+
     Notify.create({
       position: "top",
       type: 'negative',
-      message: error.response?.data?.errors?.[0]?.message || 'Error al crear usuario'
+      message: errorMsg
     });
-    console.error("Error al crear usuario:", error);
+  } finally {
+    loading.value = false;
   }
 }
 

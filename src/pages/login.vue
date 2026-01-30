@@ -85,6 +85,7 @@ import { useRouter } from "vue-router";
 import { useAdminStore } from "../store/administrador.js";
 import { Notify } from "quasar";
 import api from '../services/api.js'; 
+import { getCorreo } from "../services/servicesComponent.js";
 
 const router = useRouter();
 const adminStore = useAdminStore();
@@ -104,20 +105,35 @@ const handleEnter = (event) => {
 onMounted(() => window.addEventListener("keydown", handleEnter));
 onBeforeUnmount(() => window.removeEventListener("keydown", handleEnter));
 
+
+
 const enviarCorreo = async () => {
   if (!correoRecuperar.value) {
-    return Notify.create({ position: "top", type: "warning", message: "Ingrese su correo electrónico" });
-  }
-  loading.value = true;
-  try {
-    await api.post('/users/correo', { // Ajustado a tu ruta de correo
-      to: correoRecuperar.value,
-      subject: "Restablecimiento de contraseña",
+    return Notify.create({
+      position: "top",
+      type: "warning",
+      message: "Ingrese su correo electrónico"
     });
-    Notify.create({ position: "top", type: "positive", message: "Correo enviado correctamente" });
+  }
+
+  loading.value = true;
+
+  try {
+    await getCorreo(correoRecuperar.value);
+
+    Notify.create({
+      position: "top",
+      type: "positive",
+      message: "Correo enviado correctamente"
+    });
+
     cerrarModal();
   } catch (error) {
-    Notify.create({ position: "top", type: "negative", message: "Error al enviar el correo" });
+    Notify.create({
+      position: "top",
+      type: "negative",
+      message: "Error al enviar el correo"
+    });
   } finally {
     loading.value = false;
   }

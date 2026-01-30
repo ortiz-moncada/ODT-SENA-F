@@ -22,13 +22,9 @@ api.interceptors.request.use(
       }
     }
     
-    // ✅ Si es FormData, NO establecer Content-Type
-    // Axios lo hará automáticamente con el boundary correcto
     if (config.data instanceof FormData) {
-      // NO hacer nada, dejar que axios maneje el Content-Type
-      // Importante: NO usar delete, simplemente no tocar
+
     } else {
-      // Para otros tipos de datos, asegurar que tenga el Content-Type correcto
       if (!config.headers['Content-Type']) {
         config.headers['Content-Type'] = 'application/json';
       }

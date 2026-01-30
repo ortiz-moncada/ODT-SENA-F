@@ -9,13 +9,12 @@ export const useAdminStore = defineStore('administrador', {
     rol: localStorage.getItem('rol') ? Number(localStorage.getItem('rol')) : null,
     areaId: localStorage.getItem('areaId') || null,
     loading: false,
-    isAuthenticated: false,
     countNotifications: 0,
     totalLeidoLocal: 0,
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.token, // ✅ Este se queda
     getUserData: (state) => state.user,
     getUserId: (state) => state.userId,
     getUserRol: (state) => state.rol,
@@ -23,12 +22,9 @@ export const useAdminStore = defineStore('administrador', {
   },
 
   actions: {
-   async inicio(credentials) {
+    async inicio(credentials) {
       this.loading = true;
       try {
-        // ELIMINAMOS LA REASIGNACIÓN MANUAL QUE CAUSABA EL ERROR
-        
-        // loginUser ahora recibe directamente 'credentials' que viene del componente
         const data = await loginUser(credentials);
         
         console.log("Respuesta del login:", data); 
@@ -37,23 +33,27 @@ export const useAdminStore = defineStore('administrador', {
           throw new Error('Respuesta del servidor incompleta');
         }
         
-        // Guardar token, userId, rol y areaId
+        // ✅ El backend devuelve areaId (camelCase)
+        const areaIdValue = data.user.areaId || data.user.area_id || null;
+        
+        // Guardar en el state
         this.token = data.token;
         this.userId = data.user._id;
         this.user = data.user;
         this.rol = data.user.rol;
-        this.areaId = data.user.area_id || null;
+        this.areaId = areaIdValue;
         
+        // Guardar en localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user._id);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('rol', data.user.rol);
-        localStorage.setItem('areaId', data.user.area_id || '');
-
+        localStorage.setItem('areaId', areaIdValue || '');
+        
+        console.log("✅ Store: areaId guardado:", areaIdValue);
+        console.log("✅ Verificación inmediata:", localStorage.getItem('areaId'));
         
         this.loading = false;
-        
-        // Retornar en el formato que espera tu componente login
         return data;
       } catch (error) {
         this.loading = false;
@@ -71,15 +71,15 @@ export const useAdminStore = defineStore('administrador', {
         const data = await getUserById(this.userId);
         this.user = data.user || data;
         
-        // Actualizar también rol y areaId cuando se obtienen los datos del usuario
         if (this.user.rol) {
           this.rol = this.user.rol;
           localStorage.setItem('rol', this.user.rol);
         }
         
-        if (this.user.area_id) {
-          this.areaId = this.user.area_id;
-          localStorage.setItem('areaId', this.user.area_id);
+        const areaIdValue = this.user.areaId || this.user.area_id || null;
+        if (areaIdValue) {
+          this.areaId = areaIdValue;
+          localStorage.setItem('areaId', areaIdValue);
         }
         
         return this.user;

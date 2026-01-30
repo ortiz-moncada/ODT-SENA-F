@@ -2,8 +2,8 @@ import { useAdminStore } from "../store/administrador";
 import api, { getAuthHeaders } from "./api.js";
 import axios from "axios";
 
-
 // USUARIOS
+
 
 export async function registerUser(userData) {
   try {
@@ -87,24 +87,52 @@ export async function resetPassword(userId, newPassword) {
   }
 }
 
+// LOGIN
 export async function loginUser(credentials) {
   try {
-    console.log("Enviando a backend:", credentials);
-
-    //Enviar directamente el objeto con gmail y password
-    const res = await api.post("/users/login", {
-      gmail: credentials.gmail,
-      password: credentials.password
+    console.log("🔐 Enviando credenciales al backend:", credentials);
+    
+    // Enviar directamente el objeto con gmail y password
+    const res = await api.post("/users/login", { 
+      gmail: credentials.gmail, 
+      password: credentials.password 
     });
+    
+    console.log("✅ Respuesta del backend:", res.data);
+    console.log("👤 Usuario recibido:", res.data.user);
 
-    console.log("Respuesta del backend:", res.data);
-
+    // Guardar datos básicos
     localStorage.setItem("user", JSON.stringify(res.data.user));
     localStorage.setItem("token", res.data.token);
+    localStorage.setItem("userId", res.data.user._id);
+    localStorage.setItem("rol", res.data.user.rol);
+
+    // ✅ SOLUCIÓN SIMPLE: El backend usa "areaId", así que leemos "areaId"
+    if (res.data.user.areaId) {
+      // Si areaId es un objeto, extrae el _id
+      const areaIdValue = typeof res.data.user.areaId === 'object' 
+        ? res.data.user.areaId._id 
+        : res.data.user.areaId;
+      
+      localStorage.setItem("areaId", areaIdValue);
+      console.log("✅ areaId guardado en localStorage:", areaIdValue);
+    } else {
+      console.warn("⚠️ Usuario sin areaId en la respuesta del backend");
+      console.warn("⚠️ Esto puede causar problemas al crear tareas");
+      localStorage.removeItem("areaId");
+    }
+
+    // ✅ Verificación final
+    console.log("📊 Datos guardados en localStorage:");
+    console.log("   - userId:", localStorage.getItem("userId"));
+    console.log("   - rol:", localStorage.getItem("rol"));
+    console.log("   - areaId:", localStorage.getItem("areaId"));
+    console.log("   - token:", localStorage.getItem("token") ? "✅" : "❌");
 
     return res.data;
+    
   } catch (error) {
-    console.error("Error en loginUser:", error.response?.data || error);
+    console.error("❌ Error en loginUser:", error.response?.data || error);
     throw error;
   }
 }
@@ -123,6 +151,7 @@ export async function getCorreo(gmail) {
 
 // TAREAS
 
+
 export async function getTasksByWorker(userId) {
   try {
     const res = await api.get(`/tasks/byWorker/${userId}`, getAuthHeaders());
@@ -133,78 +162,47 @@ export async function getTasksByWorker(userId) {
   }
 }
 
+// TAREAS
 export async function postTasks(form) {
   try {
-    console.log("📦 Form recibido:", form);
-    console.log("📎 Archivos adjuntos:", form.attached_files);
-    console.log("📏 Longitud:", form.attached_files?.length);
-    
-   
-    if (!form.attached_files || form.attached_files.length === 0) {
-      console.log("✅ Enviando como JSON (sin archivos)");
+    console.log("📥 postTasks recibió datos para procesar");
+
+    let payload;
+    let headers = { ...getAuthHeaders().headers };
+
+    // 1. DETECTAR EL TIPO DE DATO
+    // Si ya viene como FormData desde el componente
+    if (form instanceof FormData) {
+      console.log("📤 Enviando directamente como FormData (Trae archivos)");
       
-      const payload = {
-        name: form.name,
-        description: form.description,
-        tribute_id: form.tribute_id,
-        stateTask: form.stateTask,
-        area_id: form.area_id,
-        workers: form.workers,
-        isMonthly: form.isMonthly
-      };
-      
-      if (!form.isMonthly && form.delivery_date) {
-        payload.delivery_date = form.delivery_date;
+      // Validación para debug (opcional)
+      if (!form.has("area_id")) {
+         console.warn("⚠️ Advertencia: area_id no detectado en el FormData");
       }
       
-      if (form.isMonthly && form.monthlyDay) {
-        payload.monthlyDay = form.monthlyDay;
+      payload = form;
+      headers["Content-Type"] = "multipart/form-data";
+    } 
+    else {
+      // 2. SI ES UN OBJETO NORMAL (JSON)
+      console.log("📤 Enviando como JSON (Sin archivos)");
+      
+      if (!form.area_id) {
+        throw new Error("No se proporcionó area_id");
       }
       
-      if (form.leader) {
-        payload.leader = form.leader;
-      }
-      
-      console.log("📤 Payload JSON:", payload);
-      const res = await api.post("/tasks/create", payload);
-      return res.data;
+      payload = form;
+      // Axios pone application/json por defecto
     }
-    
-    // ✅ Si HAY archivos, usar FormData
-    console.log("📎 Enviando como FormData (con archivos)");
-    const formData = new FormData();
-    
-    formData.append("name", form.name);
-    formData.append("description", form.description);
-    formData.append("tribute_id", form.tribute_id);
-    formData.append("stateTask", form.stateTask);
-    formData.append("area_id", form.area_id);
-    formData.append("workers", JSON.stringify(form.workers));
-    formData.append("isMonthly", String(form.isMonthly));
-    
-    if (!form.isMonthly && form.delivery_date) {
-      formData.append("delivery_date", form.delivery_date);
-    }
-    
-    if (form.isMonthly && form.monthlyDay) {
-      formData.append("monthlyDay", String(form.monthlyDay));
-    }
-    
-    if (form.leader) {
-      formData.append("leader", form.leader);
-    }
-    
-    // Agregar archivos
-    form.attached_files.forEach((file, index) => {
-      console.log(`📎 Archivo ${index}:`, file); // ✅ CORREGIDO AQUÍ
-      formData.append("file", file);
-    });
-    
-    const res = await api.post("/tasks/create", formData);
+
+    // 3. PETICIÓN ÚNICA
+    const res = await api.post("/tasks/create", payload, { headers });
+
+    console.log("✅ Respuesta del servidor:", res.data);
     return res.data;
-    
+
   } catch (error) {
-    console.error("Error en postTasks:", error.response?.data || error);
+    console.error("❌ Error en postTasks:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -272,8 +270,8 @@ export async function entregarTarea(taskId, file) {
   }
 }
 
-
 // ÁREAS
+
 
 export async function postArea(areaData) {
   try {
@@ -324,8 +322,9 @@ export async function getData() {
   }
 }
 
-
 // NOTIFICACIONES
+
+
 export async function createNotification(notificationData) {
   try {
     const res = await api.post(

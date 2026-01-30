@@ -1,49 +1,24 @@
 <template>
   <Layouts_main>
-    <div class="title">
-      <h1 :style="{ color: 'var(--oneColor--)' }" style="margin-left: 13%; margin-top: -1%; position: relative;">Notificaciones</h1>
+    <div class="header">
+      <div>
+      <h1 
+      :style="{ color: 'var(--twoColor--)' }" 
+      style=" font-weight: 600;"
+      >Notificaciones</h1>
     </div>
 
-    <div class="mInfo">
+  <div class="contem-mi-info">
+    <div class="mInfo1">
       <b class="tInfo">Área: {{ user.area }}</b>
+    </div>
+     <div class="mInfo2">
       <b class="tInfo">Rol: {{ user.rol }}</b>
     </div>
+    </div>
+  </div>
 
-    <!-- Filtros 
-    <div class="filters" style="margin-left: 13%; margin-top: 2%; display: flex; gap: 10px; align-items: center;">
-      <q-select
-        v-model="filtroEstado"
-        :options="estadoOptions"
-        label="Filtrar por estado"
-        outlined
-        dense
-        style="width: 200px;"
-        @update:model-value="aplicarFiltros"
-      />
-      <q-select
-        v-model="filtroTipo"
-        :options="tipoOptions"
-        label="Filtrar por tipo"
-        outlined
-        dense
-        style="width: 200px;"
-        @update:model-value="aplicarFiltros"
-      />
-      <q-btn 
-        flat 
-        dense 
-        icon="close" 
-        @click="limpiarFiltros"
-        v-if="filtroEstado || filtroTipo"
-      >
-        <q-tooltip>Limpiar filtros</q-tooltip>
-      </q-btn>
-      <span class="text-grey-7" style="margin-left: auto; margin-right: 2%;">
-        {{ notificationsFiltradas.length }} notificación(es)
-      </span>
-    </div>-->
-
-    <div style="display: flex; gap: 10px; margin-left: 77%; margin-top: -3%;">
+    <div style="display: flex; gap: 10px; margin-left: 80%; margin-top: -4.6%;">
      <q-btn
   dense
   flat

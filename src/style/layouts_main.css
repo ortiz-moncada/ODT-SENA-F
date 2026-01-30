@@ -88,3 +88,16 @@ color: var(--white--);
 
 }
 
+@media (max-width: 1300px) {
+ .name{
+  position: absolute;
+  margin-top: -5%;
+  margin-left: 10.5%;
+}
+
+.Ncom{
+  position: absolute;
+  margin-top: 6%;
+  margin-left: 11.5%;
+}
+}

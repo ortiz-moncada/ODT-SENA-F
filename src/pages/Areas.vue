@@ -1,161 +1,290 @@
 <template>
-  <div v-if="fromAreas" class="overlay"></div>
+  <!-- ================= OVERLAY ================= -->
+  <div v-if="fromAreas || showEditModal || showDetails" class="overlay"></div>
 
+  <!-- ================= MODAL CREAR ÁREA ================= -->
   <div v-if="fromAreas" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Crear Área</h2>
+
+    <div class="modal-header">
+      <h2>Crear Área</h2>
     </div>
 
-    <div class="imputsComtem">
-      <q-input filled v-model="name" label="Nombre del Área" />
-      <q-input filled v-model="description" type="textarea" label="Descripción del Área" />
-      <q-select filled v-model="admin" :options="admins" option-label="names" option-value="_id" label="Encargado"
-        emit-value map-options>
-        <template v-slot:no-option>
-          <q-item>
-            <q-item-section class="text-grey">
-              No hay administradores disponibles
-            </q-item-section>
-          </q-item>
-        </template>
-      </q-select>
-    </div>
+    <div class="modal-body">
+      <div class="form-grid">
 
-    <q-btn :loading="loading" class="create-btn" @click="crearArea">CREAR</q-btn>
-    <button class="close-btn-m" @click="fromAreas = false">CERRAR</button>
-  </div>
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="form-col">
+          <q-input filled v-model="name" label="Nombre del área" />
+          <q-input filled v-model="description" type="textarea" label="Descripción del área" />
+        </div>
 
-  <div v-if="showEditModal" class="overlay"></div>
-  <div v-if="showEditModal" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Editar Área</h2>
-    </div>
+        <!-- COLUMNA DERECHA -->
+        <div class="form-col">
+          <q-select
+            filled
+            v-model="admin"
+            :options="admins"
+            option-label="names"
+            option-value="_id"
+            label="Encargado"
+            emit-value
+            map-options
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">
+                  No hay administradores disponibles
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
 
-    <div class="imputsComtem">
-      <q-input filled v-model="editForm.name" label="Nombre del Área" />
-      <q-input filled v-model="editForm.description" type="textarea" label="Descripción del Área" />
-      <q-select filled v-model="editForm.admin" :options="admins" option-label="names" option-value="_id" label="Encargado"
-        emit-value map-options>
-        <template v-slot:no-option>
-          <q-item>
-            <q-item-section class="text-grey">
-              No hay administradores disponibles
-            </q-item-section>
-          </q-item>
-        </template>
-      </q-select>
-    </div>
-
-    <q-btn :loading="loading" class="create-btn" @click="actualizarArea">ACTUALIZAR</q-btn>
-    <button class="close-btn-m" @click="cerrarModalEditar">CERRAR</button>
-  </div>
-
-  <div v-if="showDetails" class="overlay"></div>
-  <div v-if="showDetails" class="modal">
-    <div class="headed">
-      <h2 style="text-align: center;">Detalles del Área</h2>
-    </div>
-    <div class="contemInputs">
-      <div class="infoN">
-        <h3 style="font-weight:800;">
-          Información del area
-          <img style="position: absolute; max-width: 35px; margin-top: 4px; margin-left: 2%;"
-            src="https://cdn-icons-png.flaticon.com/512/263/263164.png"/> 
-        </h3>
-        <p><b>Titulo del área: </b>{{ selectedArea.name }}</p>
-        <p><b>Descripción: </b>{{ selectedArea.description }}</p>
-        <p><b>Estado: </b>
-          <q-chip :label="stateMap[selectedArea.state]?.label" :color="stateMap[selectedArea.state]?.color"
-            text-color="white" size="sm" class="q-mx-sm" />
-        </p>
-      </div><br>
-      <div class="infoA">
-        <h3 style="font-weight:800;">
-          Encargado y trabajadores
-          <img style="position: absolute; max-width: 40px; margin-top: 4px; margin-left: 2%;"
-            src="https://cdn-icons-png.flaticon.com/512/50/50645.png"/> 
-        </h3>
-        <p><b>Encargado: </b>{{ selectedArea.admin?.names || 'Sin asignar' }}</p>
-        <p><b>Trabajadores: </b>
-          <span v-if="selectedArea.worker && selectedArea.worker.length > 0">
-            {{selectedArea.worker.map(w => w.names).join(', ')}}
-          </span>
-          <span v-else> Sin trabajadores asignados </span>
-        </p>
       </div>
     </div>
-    <button class="close-btn" @click="showDetails = false">CERRAR</button>
+
+    <div class="modal-footer">
+      <q-btn
+        :loading="loading"
+        label="CREAR"
+        style="background: var(--oneColor--); color: white"
+        @click="crearArea"
+      />
+      <q-btn
+        flat
+        label="CERRAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="fromAreas = false"
+      />
+    </div>
+
   </div>
 
+  <!-- ================= MODAL EDITAR ÁREA ================= -->
+  <div v-if="showEditModal" class="modal">
+
+    <div class="modal-header">
+      <h2>Editar Área</h2>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <div class="form-col">
+          <q-input filled v-model="editForm.name" label="Nombre del área" />
+          <q-input filled v-model="editForm.description" type="textarea" label="Descripción del área" />
+        </div>
+
+        <div class="form-col">
+          <q-select
+            filled
+            v-model="editForm.admin"
+            :options="admins"
+            option-label="names"
+            option-value="_id"
+            label="Encargado"
+            emit-value
+            map-options
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">
+                  No hay administradores disponibles
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <q-btn
+        :loading="loading"
+        label="ACTUALIZAR"
+        style="background: var(--oneColor--); color: white"
+        @click="actualizarArea"
+      />
+      <q-btn
+        flat
+        label="CERRAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="cerrarModalEditar"
+      />
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL DETALLES ================= -->
+  <div v-if="showDetails" class="modal-details">
+
+    <div class="modal-header-details">
+      <h2>Detalles del Área</h2>
+    </div>
+
+    <div class="modal-body-details">
+      <div class="details-grid">
+
+        <!-- INFO ÁREA -->
+        <div class="card">
+          <h3 class="card-title">
+            Información del área
+            <img src="https://cdn-icons-png.flaticon.com/512/263/263164.png" />
+          </h3>
+
+          <p><span>Título:</span> {{ selectedArea.name }}</p>
+          <p><span>Descripción:</span> {{ selectedArea.description }}</p>
+
+          <div class="estado">
+            <span>Estado:</span>
+            <q-chip
+              :label="stateMap[selectedArea.state]?.label"
+              :color="stateMap[selectedArea.state]?.color"
+              text-color="white"
+              size="sm"
+            />
+          </div>
+        </div>
+
+        <!-- ENCARGADO Y TRABAJADORES -->
+        <div class="card">
+          <h3 class="card-title">
+            Encargado y trabajadores
+            <img src="https://cdn-icons-png.flaticon.com/512/50/50645.png" />
+          </h3>
+
+          <p>
+            <span>Encargado:</span>
+            {{ selectedArea.admin?.names || 'Sin asignar' }}
+          </p>
+
+          <p>
+            <span>Trabajadores:</span>
+            <span v-if="selectedArea.worker && selectedArea.worker.length">
+              {{ selectedArea.worker.map(w => w.names).join(', ') }}
+            </span>
+            <span v-else>Sin trabajadores asignados</span>
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-footer-details">
+      <q-btn
+        label="CERRAR"
+        style="background: var(--sevenColor--); color: white"
+        @click="showDetails = false"
+      />
+    </div>
+
+  </div>
+
+  <!-- ================= LISTADO ================= -->
   <Layouts_main>
-    <h1 style="text-align: center;" :style="{ color: 'var(--oneColor--)' }">AREAS</h1>
+    <h1 style="text-align: center;" :style="{ color: 'var(--oneColor--)' }">ÁREAS</h1>
     <hr><br>
 
-    <q-input v-model="search" dense outlined style="max-width: 400px; margin-left: 2%;" label="INGRESE NOMBRE DEL ÁREA">
-      <template v-slot:append>
-        <q-btn flat dense round>
-          <img src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
-            style="width: 18px; height: 18px;" />
-        </q-btn>
-      </template>
-    </q-input>
+    <div class="header-principal">
+      <q-input
+        v-model="search"
+        dense
+        outlined
+        style="max-width: 400px"
+        label="BUSCAR ÁREA"
+      >
+        <template v-slot:append>
+          <q-btn flat dense round>
+            <img
+              src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
+              style="width: 18px"
+            />
+          </q-btn>
+        </template>
+      </q-input>
 
-    <q-btn :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }" label="CREAR +"
-      style="position: absolute; margin-left: 80%; margin-top: -2.7%;" @click="fromAreas = !fromAreas" />
+      <q-btn-dropdown :label="ordenarLabel">
+        <q-list>
+          <q-item clickable v-close-popup @click="setOrden('asc', 'A → Z')">
+            <q-item-section>A → Z</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="setOrden('desc', 'Z → A')">
+            <q-item-section>Z → A</q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
 
-    <q-btn-dropdown class="LP" :label="ordenarLabel">
-      <q-list>
-        <q-item clickable v-close-popup @click="setOrden('asc','A → Z')">
-          <q-item-section>A → Z</q-item-section>
-        </q-item>
-        <q-item clickable v-close-popup @click="setOrden('desc','Z → A')">
-          <q-item-section>Z → A</q-item-section>
-        </q-item>
-      </q-list>
-    </q-btn-dropdown>
+      <q-btn-dropdown :label="estadoLabel">
+        <q-list>
+          <q-item clickable v-close-popup @click="setEstado(1, 'Activas')">
+            <q-item-section>Activas</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="setEstado(2, 'Inactivas')">
+            <q-item-section>Inactivas</q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
 
-    <q-btn-dropdown class="IA" :label="estadoLabel">
-      <q-list>
-        <q-item clickable v-close-popup @click="setEstado(1,'Activas')">Activas</q-item>
-        <q-item clickable v-close-popup @click="setEstado(2,'Inactivas')">Inactivas</q-item>
-      </q-list>
-    </q-btn-dropdown>
+      <q-btn
+        :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }"
+        label="CREAR +"
+        @click="fromAreas = true"
+      />
+    </div>
 
-    <br>
     <div class="q-pa-md">
-      <q-table style="text-align: center; height: 400px; width: 97%; margin-left: 1%;" flat bordered
-        :rows="filteredAreas" :columns="columns" row-key="_id" v-model:pagination="pagination"
-        :rows-per-page-options="[0]" :no-data-label="' '">
-        
+      <q-table
+        flat
+        bordered
+        :rows="filteredAreas"
+        :columns="columns"
+        row-key="_id"
+        v-model:pagination="pagination"
+        :rows-per-page-options="[0]"
+        :no-data-label="' '"
+      >
+
         <template v-slot:body-cell-opcions="props">
           <q-td :props="props" class="text-center">
-            <q-btn size="sm" :color="props.row.state === 1 ? 'negative' : 'green'"
-              :icon="props.row.state === 1 ? 'close' : 'check'" round dense class="q-ml-sm"
-              @click="toggleEstado(props.row)" />
-            <q-btn size="sm" color="primary" icon="edit" round dense class="q-ml-sm" @click="editarArea(props.row)" />
-            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
+            <q-btn
+              size="sm"
+              :color="props.row.state === 1 ? 'negative' : 'green'"
+              :icon="props.row.state === 1 ? 'close' : 'check'"
+              round dense
+              @click="toggleEstado(props.row)"
+            />
+            <q-btn size="sm" color="primary" icon="edit" round dense
+              @click="editarArea(props.row)" />
+            <q-btn size="sm" color="secondary" icon="visibility" round dense
               @click="verDetalles(props.row)" />
           </q-td>
         </template>
 
         <template v-slot:body-cell-state="props">
           <q-td :props="props">
-            <q-chip :label="stateMap[props.row.state]?.label" :color="stateMap[props.row.state]?.color"
-              text-color="white" size="sm" class="q-mx-sm" />
+            <q-chip
+              :label="stateMap[props.row.state]?.label"
+              :color="stateMap[props.row.state]?.color"
+              text-color="white"
+              size="sm"
+            />
           </q-td>
         </template>
 
         <template v-slot:no-data>
           <div class="full-width column flex-center text-grey-7 q-pa-lg">
-            <img src="../IMG/pregunta (1).png" alt="Sin datos" style="max-width: 15%; margin-bottom: 10px;" />
-            <h5 v-if="areasData.length === 0"> No hay areas registradas </h5>
-            <h5 v-else> No hay areas con los filtros aplicados </h5>
+            <img src="../IMG/pregunta (1).png" style="max-width: 15%; margin-bottom: 10px;" />
+            <h5 v-if="areasData.length === 0">No hay áreas registradas</h5>
+            <h5 v-else>No hay áreas con los filtros aplicados</h5>
           </div>
         </template>
+
       </q-table>
     </div>
   </Layouts_main>
 </template>
+
 
 <script setup>
 import Layouts_main from '../layouts/layouts_main.vue'
@@ -302,7 +431,14 @@ const toggleEstado = async (area) => {
 const columns = [
   { name: 'index', label: '#', field: row => row.index, align: 'center' },
   { name: 'name', label: 'Nombre', field: 'name', align: 'center', sortable: true },
-  { name: 'description', label: 'Descripción', field: 'description', align: 'center' },
+{
+    name:'description',
+    label:'Descripción',
+    field:'description',
+    align:'left',
+    style:'max-width:250px',
+    classes:'ellipsis'
+  },
   { name: 'admin', label: 'Encargado', field: row => row.admin?.names || 'Sin asignar', align: 'center' },
   { name: 'worker', label: 'Trabajadores', field: row => row.worker?.map(w => w.names).join(', ') || 'Sin trabajadores', align: 'center' },
   { name: 'state', label: 'Estado' },
