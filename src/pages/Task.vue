@@ -271,6 +271,9 @@
         <q-item clickable v-close-popup @click="setEstado(4, 'Rechazada')">
           <q-item-section>Rechazada</q-item-section>
         </q-item>
+        <q-item clickable v-close-popup @click="setEstado(5, 'Vencida')">
+          <q-item-section>Vencida</q-item-section>
+        </q-item>
       </q-list>
     </q-btn-dropdown>
 
@@ -310,19 +313,21 @@
           </q-td>
         </template>
 
-        <template v-slot:body-cell-attached_files="props">
-          <q-td :props="props">
-            <div v-if="props.row.attached_files?.length">
-              <div v-for="(file, index) in props.row.attached_files" :key="index">
-                <a :href="file.url || `${API_URL}/tasks/byWorker/${file.path}`" target="_blank"
-                  style="color: blue; cursor: pointer;">
-                  {{ file.name || `Archivo ${index + 1}` }}
-                </a>
-              </div>
-            </div>
-            <span v-else>Sin archivos</span>
-          </q-td>
-        </template>
+      <template v-slot:body-cell-attached_files="props">
+  <q-td :props="props">
+    <div v-if="props.row.attached_files && props.row.attached_files.length">
+      <div v-for="(file, index) in props.row.attached_files" :key="index" class="q-mb-xs">
+        <q-icon name="insert_drive_file" size="xs" color="primary" />
+        <a :href="file.url || `${API_URL}/${file.path}`" 
+           target="_blank"
+           style="color: #1976d2; text-decoration: none; font-weight: 500;">
+          {{ file.name || `Archivo ${index + 1}` }}
+        </a>
+      </div>
+    </div>
+    <span v-else class="text-grey-6">Sin archivos</span>
+  </q-td>
+</template>
 
         <template v-slot:no-data>
           <div class="full-width column flex-center text-grey-7 q-pa-lg">
@@ -349,18 +354,18 @@
 import Layouts_main from '../layouts/layouts_main.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { Notify } from 'quasar'
-import api, { API_URL } from '../services/api.js'
 import { postTasks, putTasks, createNotification } from '../services/servicesComponent'
 import { useAdminStore } from '../store/administrador'
+import api, { API_URL, getAuthHeaders } from '../services/api.js'
 
 const store = useAdminStore()
 const rol = Number(localStorage.getItem('rol'))
 const areaId = store.getUserAreaId || localStorage.getItem('areaId')
 const userId = localStorage.getItem('userId')
 
-console.log("🔍 Task.vue - areaId del store:", store.getUserAreaId)
-console.log("🔍 Task.vue - areaId del localStorage:", localStorage.getItem('areaId'))
-console.log("🔍 Task.vue - areaId final usado:", areaId)
+console.log(" Task.vue - areaId del store:", store.getUserAreaId)
+console.log(" Task.vue - areaId del localStorage:", localStorage.getItem('areaId'))
+console.log(" Task.vue - areaId final usado:", areaId)
 
 
 const entregaComentario = ref('')
@@ -440,31 +445,32 @@ const seleccionarArchivoEntrega = () => {
 
 const entregarTareaWorker = async () => {
   try {
-    loading.value = true;
     if (!entregaFile.value) {
-      return Notify.create({ type: 'negative', message: 'Debe adjuntar un archivo' });
+      return Notify.create({ type: 'negative', message: 'Adjunte un archivo' });
     }
 
+    loading.value = true;
     const formData = new FormData();
-    formData.append("file", entregaFile.value);
+    formData.append("file", entregaFile.value); // Coincide con req.files.file
+    formData.append("userId", userId); // Backup por si el token falla
 
-    await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData);
-
-    // Notificamos al creador de la tarea (tribute_id)
-    await createNotification({
-      title: "Tarea Entregada (Para Revisión)",
-      nameTask: tareaEntrega.value.name,
-      description: `El trabajador ha entregado la tarea. Estado: 2`,
-      task_id: tareaEntrega.value._id,
-      user_id: tareaEntrega.value.tribute_id,
-      area_id: areaId
+    // IMPORTANTE: Asegúrate que api.post sea el método correcto según tu router
+    const response = await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData, {
+      headers: {
+        ...getAuthHeaders().headers,
+        "Content-Type": "multipart/form-data"
+      }
     });
-    loading.value = false;
-    Notify.create({ type: 'positive', message: 'Tarea entregada correctamente' });
+
+    Notify.create({ type: 'positive', message: 'Entrega enviada con éxito' });
     showEntregaWorker.value = false;
+    entregaFile.value = null;
     await obtenerTareas();
+    
   } catch (error) {
-    console.error(error)
+    console.error("Error entrega:", error);
+    Notify.create({ type: 'negative', message: error.response?.data?.error || "Error en entrega" });
+  } finally {
     loading.value = false;
   }
 };
@@ -518,50 +524,24 @@ const subirArchivoCrear = () => {
 
 const crearTarea = async () => {
   try {
-    // 1. VALIDACIÓN DE AREAID
-    if (!areaId || areaId === 'undefined' || areaId === 'null') {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Error: No tienes un área asignada. Contacta al administrador.',
-        timeout: 5000
-      });
+    if (!areaId || areaId === 'undefined') {
+      return Notify.create({ type: 'negative', message: 'No tienes un área asignada.' });
     }
 
-    // 2. VALIDACIONES DE CAMPOS OBLIGATORIOS
     if (!name.value || !description.value || workers.value.length === 0) {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Por favor, complete nombre, descripción y asigne trabajadores' 
-      });
-    }
-
-    if (isMonthly.value && (!monthlyDay.value || monthlyDay.value < 1 || monthlyDay.value > 28)) {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Día mensual inválido (1-28)' 
-      });
-    }
-
-    if (!isMonthly.value && !date.value) {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Debe seleccionar una fecha de entrega' 
-      });
+      return Notify.create({ type: 'negative', message: 'Complete los campos obligatorios' });
     }
 
     loading.value = true;
-   console.log("Archivo a enviar:", crearArchivo.value)
-    // 3. CONSTRUCCIÓN DEL FORMDATA (Para poder enviar archivos)
+
     const formData = new FormData();
-    
     formData.append("name", name.value.trim());
     formData.append("description", description.value.trim());
     formData.append("area_id", areaId);
-    formData.append("tribute_id", userId);
-    formData.append("stateTask", "1");
+    formData.append("tribute_id", userId); // ID del creador
     formData.append("isMonthly", isMonthly.value);
-
-    // Los arrays deben enviarse como String JSON para que el backend los procese bien
+    
+    // IMPORTANTE: Enviar como JSON string para que el backend lo reciba bien
     formData.append("workers", JSON.stringify(workers.value));
     
     const taskLeader = workers.value.length > 1 ? leader.value : workers.value[0];
@@ -573,55 +553,21 @@ const crearTarea = async () => {
       formData.append("delivery_date", date.value);
     }
 
-    // ADJUNTAR EL ARCHIVO FÍSICO
     if (crearArchivo.value) {
       formData.append("file", crearArchivo.value); 
     }
 
-    // 4. ENVÍO AL BACKEND
-    console.log("🚀 Enviando FormData con archivo...");
-    const respuesta = await postTasks(formData);
+    // Llamada al servicio corregido
+    await postTasks(formData);
     
-    // Extraemos la tarea creada (ajusta según cómo responda tu API)
-    const tareaCreada = respuesta.data?.task || respuesta.task || respuesta;
-
-    // 5. NOTIFICACIONES A TRABAJADORES
-    for (const workerId of workers.value) {
-      try {
-        await createNotification({
-          title: "Nueva tarea asignada",
-          nameTask: name.value,
-          description: `Se te ha asignado una nueva tarea: ${name.value}`,
-          deliveryDate: isMonthly.value ? `Día ${monthlyDay.value} de cada mes` : date.value,
-          task_id: tareaCreada._id,
-          user_id: workerId,
-          area_id: areaId
-        });
-      } catch (notifError) {
-        console.warn("⚠️ No se pudo notificar al trabajador:", workerId);
-      }
-    }
-
-    // 6. FEEDBACK Y LIMPIEZA
-    Notify.create({
-      type: 'positive',
-      message: 'Tarea creada y archivo subido con éxito',
-      position: 'top'
-    });
-
+    Notify.create({ type: 'positive', message: 'Tarea creada con éxito' });
     showCreate.value = false;
-    await obtenerTareas();
     limpiarFormulario();
+    await obtenerTareas();
 
   } catch (error) {
-    console.error("❌ Error al crear tarea:", error);
-    const errorMsg = error.response?.data?.message || error.response?.data?.error || "Error al subir la tarea o el archivo";
-    
-    Notify.create({
-      type: 'negative',
-      message: errorMsg,
-      position: 'top'
-    });
+    console.error("❌ Error al crear:", error);
+    Notify.create({ type: 'negative', message: error.response?.data?.error || "Error al crear" });
   } finally {
     loading.value = false;
   }
@@ -658,36 +604,30 @@ const verDetalles = (task) => {
 const actualizarTarea = async () => {
   try {
     loading.value = true;
-    await putTasks(editId.value, {
+    
+    // Obtenemos el estado que tenía antes de editar
+    const estadoPrevio = tasks.value.find(t => t._id === editId.value)?.stateTask;
+
+    const payload = {
       name: editName.value,
       description: editDescription.value,
       workers: editWorkers.value,
       delivery_date: editDate.value,
-      stateTask: editState.value
-    });
-    
-    const estadoTexto = stateMap[editState.value]?.label || "actualizado";
+      stateTask: editState.value,
+      estadoAnterior: estadoPrevio // <--- El backend lo usará para el correo
+    };
 
-    for (const workerId of editWorkers.value) {
-      await createNotification({
-        title: `Estado actualizado: ${estadoTexto}`,
-        nameTask: editName.value,
-        description: `La tarea cambió al estado: ${editState.value}`,
-        deliveryDate: editDate.value,
-        task_id: editId.value,
-        user_id: workerId,
-        area_id: areaId
-      });
-    }
+    // Llamada al servicio
+    await putTasks(editId.value, payload);
 
-    loading.value = false;
-    Notify.create({ type: 'positive', message: 'Tarea actualizada' });
+    Notify.create({ type: 'positive', message: 'Tarea actualizada correctamente' });
     showEdit.value = false;
-    obtenerTareas();
+    await obtenerTareas();
+
   } catch (error) {
+    Notify.create({ type: 'negative', message: error.response?.data?.error || "Error al actualizar" });
+  } finally {
     loading.value = false;
-    console.error("Error al actualizar tarea:", error);
-    Notify.create({ type: 'negative', message: 'Error al actualizar' });
   }
 };
 
@@ -732,7 +672,7 @@ const obtenerTrabajadores = async () => {
     const res = await api.get(`/users/seeUsers`)
     const todosLosUsuarios = res.data
     
-    const miAreaIdActual = areaId; // ✅ Usar la variable directamente
+    const miAreaIdActual = areaId; // 
     const miRolActual = Number(localStorage.getItem('rol'));
 
     console.log("🔍 DEBUG -> Mi Rol:", miRolActual, "| Mi AreaID:", miAreaIdActual);
@@ -758,10 +698,10 @@ const obtenerTrabajadores = async () => {
         return Number(u.rol) === 3 && userAreaId === String(miAreaIdActual);
       });
       
-      console.log(`✅ Admin de Área: ${workersList.value.length} trabajadores de área ${miAreaIdActual}`);
+      console.log(`Admin de Área: ${workersList.value.length} trabajadores de área ${miAreaIdActual}`);
     }
   } catch (error) {
-    console.error("❌ Error al obtener trabajadores:", error)
+    console.error("Error al obtener trabajadores:", error)
     Notify.create({
       type: 'negative',
       message: 'Error al cargar trabajadores'
@@ -771,11 +711,11 @@ const obtenerTrabajadores = async () => {
 
 //  VALIDACIÓN CRÍTICA AL MONTAR EL COMPONENTE
 onMounted(() => {
-  console.log("🚀 Montando componente Task.vue...");
-  console.log("📊 Datos en localStorage:");
-  console.log("   - userId:", userId);
-  console.log("   - rol:", rol);
-  console.log("   - areaId:", areaId);
+  console.log(" Montando componente Task.vue...");
+  console.log(" Datos en localStorage:");
+  console.log(" userId:", userId);
+  console.log(" rol:", rol);
+  console.log(" areaId:", areaId);
 
   // Verificar que areaId existe y no es "undefined"
   if (!areaId || areaId === 'undefined' || areaId === 'null') {

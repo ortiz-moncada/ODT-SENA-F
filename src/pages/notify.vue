@@ -47,6 +47,7 @@
         :key="n._id"
         class="alertCard"
         :style="getCardStyle(n)"
+        @click="irTasks"
       >
         <h4>{{ n.title }}</h4>
         <small class="date">{{ new Date(n.createdAt).toLocaleString() }}</small>
@@ -71,6 +72,13 @@ import { getUserById, getNotifications, deleteNotifications } from "../services/
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAdminStore } from "../store/administrador.js";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+const irTasks = () => {
+  router.push("/task")
+}
 
 const adminStore = useAdminStore();
 

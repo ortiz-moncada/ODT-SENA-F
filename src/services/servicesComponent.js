@@ -163,44 +163,21 @@ export async function getTasksByWorker(userId) {
 }
 
 // TAREAS
+
 export async function postTasks(form) {
   try {
-    console.log("📥 postTasks recibió datos para procesar");
-
     let payload;
     let headers = { ...getAuthHeaders().headers };
 
-    // 1. DETECTAR EL TIPO DE DATO
-    // Si ya viene como FormData desde el componente
     if (form instanceof FormData) {
-      console.log("📤 Enviando directamente como FormData (Trae archivos)");
-      
-      // Validación para debug (opcional)
-      if (!form.has("area_id")) {
-         console.warn("⚠️ Advertencia: area_id no detectado en el FormData");
-      }
-      
       payload = form;
       headers["Content-Type"] = "multipart/form-data";
-    } 
-    else {
-      // 2. SI ES UN OBJETO NORMAL (JSON)
-      console.log("📤 Enviando como JSON (Sin archivos)");
-      
-      if (!form.area_id) {
-        throw new Error("No se proporcionó area_id");
-      }
-      
+    } else {
       payload = form;
-      // Axios pone application/json por defecto
     }
 
-    // 3. PETICIÓN ÚNICA
     const res = await api.post("/tasks/create", payload, { headers });
-
-    console.log("✅ Respuesta del servidor:", res.data);
     return res.data;
-
   } catch (error) {
     console.error("❌ Error en postTasks:", error.response?.data || error.message);
     throw error;
@@ -219,31 +196,25 @@ export async function getTasks() {
 
 export async function putTasks(id, form) {
   try {
-    const formData = new FormData();
+    const headers = { ...getAuthHeaders().headers };
+    let payload;
 
-    // Agregar todos los campos excepto archivos
-    Object.keys(form).forEach(key => {
-      if (key !== "attached_files") {
-        if (Array.isArray(form[key])) {
-          formData.append(key, JSON.stringify(form[key]));
-        } else {
-          formData.append(key, form[key]);
-        }
-      }
-    });
-
-    if (form.attached_files && form.attached_files.length > 0) {
-      form.attached_files.forEach(file => {
-        formData.append("file", file);
-      });
+    // Si el formulario ya es FormData (viene del componente con archivos)
+    if (form instanceof FormData) {
+      payload = form;
+      headers["Content-Type"] = "multipart/form-data";
+    } else {
+      // Si es un objeto JSON normal
+      payload = form;
     }
 
-    const res = await api.put(`/tasks/${id}`, formData);
+    // Enviamos el PUT con los headers de auth correctos
+    const res = await api.put(`/tasks/${id}`, payload, { headers });
 
+    console.log("✅ Tarea actualizada:", res.data);
     return res.data;
-
   } catch (error) {
-    console.error("Error al actualizar tarea:", error);
+    console.error("❌ Error en putTasks:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -252,20 +223,23 @@ export async function entregarTarea(taskId, file) {
   try {
     const formData = new FormData();
     
+    // IMPORTANTE: El backend espera "file" para procesarlo con express-fileupload
     if (file) {
-      formData.append("file", file); // ✅ Usar "file" en minúscula
+      formData.append("file", file);
     }
 
-    const res = await api.put(`/tasks/entregar/${taskId}`, formData, {
+    // USAMOS POST porque en tus rutas definiste: router.post("/entregar/:id", ...)
+    // Si usas PUT aquí pero el backend es POST, dará error 404 o 500
+    const res = await api.post(`/tasks/entregar/${taskId}`, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
-        ...getAuthHeaders().headers
+        ...getAuthHeaders().headers,
+        "Content-Type": "multipart/form-data"
       }
     });
 
     return res.data;
   } catch (error) {
-    console.error("Error al entregar tarea:", error.response?.data || error);
+    console.error("❌ Error al entregar tarea:", error.response?.data || error.message);
     throw error;
   }
 }

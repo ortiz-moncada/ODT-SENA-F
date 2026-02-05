@@ -46,15 +46,14 @@
     <div v-if="modalRecuperar" class="overlay"></div>
     <div v-if="modalRecuperar" class="modal">
       <div class="modal-header">
-        <h2 style="text-align: start;">RESTABLECIMIENTO DE CONTRASEÑA</h2>
+        <h2 style="text-align: start;">RESTABLECER CONTRASEÑA</h2>
         <img class="logoSena" src="../IMG/logo-sena-blanco.png" alt="SENA" />
       </div>
 
       <div class="modal-body">
-        <h3>Ingrese su correo electrónico</h3>
-        <p class="textInfo">
-          Para restablecer tu contraseña te enviaremos un correo electrónico.
-        </p>
+        <h6 class="texRc">Ingresa tu correo electrónico y te enviaremos
+un enlace para restablecer tu contraseña.</h6>
+        
         <q-input 
           filled 
           v-model="correoRecuperar" 
@@ -66,14 +65,13 @@
       </div>
 
       <div class="modal-actions">
-        <q-btn flat class="closeBTN" label="CERRAR" @click="cerrarModal" />
         <q-btn 
           class="openBTN" 
-          label="SIGUIENTE" 
-          icon-right="arrow_forward" 
+          label="ENVIAR ENLACE" 
           :loading="loading" 
           @click="enviarCorreo" 
         />
+        <q-btn flat class="closeBTN" label="CERRAR" @click="cerrarModal" />
       </div>
     </div>
   </div>
