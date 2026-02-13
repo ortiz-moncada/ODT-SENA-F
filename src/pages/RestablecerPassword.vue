@@ -1,37 +1,40 @@
 <template>
-  <div class="q-pa-xl flex flex-center">
-    <q-card style="width: 400px">
-      <q-card-section>
-        <h5 class="text-center">Restablecer contraseña</h5>
-      </q-card-section>
+  <div class="containerS">
+    <div class="reset-card">
+      <div class="imgContainer">
+        <img src="../IMG/compu.png" style="max-height: 400px; margin-top: 100px;" alt="compu">
+      </div>
+      <div class="cardInfo">
 
-      <q-card-section>
-        <q-input
-          v-model="password"
-          type="password"
-          label="Nueva contraseña"
-          outlined
-          hint="Mínimo 6 caracteres"
-        />
-      </q-card-section>
+        <!-- HEADER -->
+        <div class="reset-header">
+          <h5>Restablecer contraseña</h5>
+          <img class="LSB" src="../IMG/logosena.png" alt="logoSena">
+        </div>
 
-      <q-card-actions align="center">
-        <q-btn
-          color="primary"
-          label="Actualizar Contraseña"
-          :loading="loading"
-          @click="cambiarPassword"
-        />
-      </q-card-actions>
-    </q-card>
+        <!-- BODY -->
+        <q-card-section class="q-pa-lg">
+          <q-input v-model="password" type="password" label="Nueva contraseña" outlined dense
+            hint="Mínimo 6 caracteres" />
+        </q-card-section>
+
+        <!-- ACTIONS -->
+        <q-card-actions align="center" class="q-pb-lg">
+          <q-btn class="full-width" style="background: var(--oneColor--); color: var(--white--);"
+            label="ACTUALIZAR CONTRASEÑA" :loading="loading" @click="cambiarPassword" />
+        </q-card-actions>
+      </div>
+    </div>
   </div>
+
+
 </template>
 
 <script setup>
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Notify } from "quasar";
-import api from "../services/api.js"; // Asegúrate de que apunte a tu axios
+import api from "../services/api.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,7 +42,6 @@ const password = ref("");
 const loading = ref(false);
 
 const cambiarPassword = async () => {
-  // 1. Validaciones básicas
   if (!password.value || password.value.length < 6) {
     return Notify.create({
       type: "warning",
@@ -50,13 +52,10 @@ const cambiarPassword = async () => {
   loading.value = true;
 
   try {
-    // 2. Extraer el token de la URL (el :token que pusimos en el router)
     const token = route.params.token;
 
-    // 3. Petición al backend
-    // Ajusta la URL '/users/reset-password-update' según tu backend
     await api.post("/users/reset-password-update", {
-      token: token,
+      token,
       newPassword: password.value,
     });
 
@@ -66,11 +65,8 @@ const cambiarPassword = async () => {
       position: "top",
     });
 
-    // 4. Redirigir al login
     router.push("/login");
-
   } catch (error) {
-    console.error("Error al restablecer:", error);
     Notify.create({
       type: "negative",
       message: error.response?.data?.message || "Token inválido o expirado",
@@ -80,3 +76,44 @@ const cambiarPassword = async () => {
   }
 };
 </script>
+<style scoped>
+.reset-card {
+  background: var(--white--);
+  width: 80%;
+  height: 90vh;
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  box-shadow: rgb(9, 120, 9) 0px 0px 20px 5px;
+}
+
+
+.reset-header {
+  color: var(--oneColor--);
+}
+
+.LSB {
+  position: absolute;
+  width: 90px;
+  height: auto;
+  margin-top: -200px;
+  margin-left: -3%;
+}
+
+.containerS {
+  background-image:url(../IMG/fondo.png);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.imgContainer{
+  background: var(--oneColor--);
+  border-radius: 10px 0px 0px 10px;
+}
+.cardInfo{
+  text-align: center;
+  padding-top: 30%;
+}
+
+</style>

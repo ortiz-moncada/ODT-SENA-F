@@ -1,8 +1,7 @@
 <template>
-  <!-- ================= OVERLAY ================= -->
+
   <div v-if="fromAreas || showEditModal || showDetails" class="overlay"></div>
 
-  <!-- ================= MODAL CREAR ÁREA ================= -->
   <div v-if="fromAreas" class="modal">
 
     <div class="modal-header">
@@ -291,7 +290,6 @@ import Layouts_main from '../layouts/layouts_main.vue'
 import { ref, onMounted, computed } from 'vue'
 import { postArea, getArea, getUser, putArea } from '../services/servicesComponent.js'
 import { Notify } from 'quasar'
-// ✅ Importamos 'api' que ya tiene configurado el baseURL y los interceptores
 import api from '../services/api.js'
 
 const fromAreas = ref(false)
@@ -335,7 +333,6 @@ const filteredAreas = computed(() => {
   return lista
 })
 
-// ✅ FUNCIÓN CORREGIDA: Usamos el endpoint correcto y la instancia 'api'
 const obtenerAdmins = async () => {
   try {
     // La ruta correcta para ver usuarios es /users/seeUsers
