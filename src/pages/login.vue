@@ -1,88 +1,122 @@
 <template>
-  <div class="container">
-    <div class="contemLogin">
-      <div class="design">
-        <h1 class="titleImportant">ODT</h1>
-        <p class="Ncom">ORGANIZADOR DE TAREAS</p>
-      </div>
+  <div class="login-page flex flex-center bg-grey-2">
+    <q-card flat bordered class="login-card shadow-1">
+      <q-card-section class="bg-white text-center q-pt-xl q-pb-md">
+        <q-img src="../IMG/logosena.png" style="width: 70px" class="q-mb-md" />
+        <div class="text-h5 text-weight-bold text-primary">ODT - ACCESO</div>
+        <div class="text-caption text-grey-7 uppercase text-weight-bold" style="letter-spacing: 1px;">Organizador de Tareas</div>
+      </q-card-section>
 
-      <div class="questions">
-        <img class="LS" src="../IMG/logosena.png" alt="logoSena" />
-        <br />
-        <h2 class="title">LOGIN</h2>
+      <q-card-section class="q-px-xl q-pb-xl">
+        <q-form @submit="pasarUsuario" class="q-gutter-y-md q-mt-md">
+          <q-input
+            v-model="gmail"
+            label="Correo Electrónico"
+            outlined
+            dense
+            lazy-rules
+            :rules="[val => !!val || 'Campo obligatorio']"
+          >
+            <template v-slot:prepend>
+              <q-icon name="email" color="primary" size="20px" />
+            </template>
+          </q-input>
 
-        <q-input class="inpt" filled v-model="gmail" label="Tu Usuario" @keydown.enter="pasarUsuario" />
-        <br />
+          <q-input
+            v-model="password"
+            :type="isPwd ? 'password' : 'text'"
+            label="Contraseña"
+            outlined
+            dense
+            lazy-rules
+            :rules="[val => !!val || 'Campo obligatorio']"
+          >
+            <template v-slot:prepend>
+              <q-icon name="lock" color="primary" size="20px" />
+            </template>
+            <template v-slot:append>
+              <q-icon
+                :name="isPwd ? 'visibility_off' : 'visibility'"
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+                size="20px"
+              />
+            </template>
+          </q-input>
 
-        <q-input 
-          class="inpt2" 
-          v-model="password" 
-          filled 
-          :type="isPwd ? 'password' : 'text'" 
-          label="Tu Contraseña"
-          @keydown.enter="pasarUsuario"
-        >
-          <template v-slot:append>
-            <q-icon 
-              :name="isPwd ? 'visibility_off' : 'visibility'" 
-              class="cursor-pointer" 
-              @click="isPwd = !isPwd" 
+          <div class="row justify-center">
+            <q-btn
+              flat
+              dense
+              color="primary"
+              label="¿Olvidó su clave?"
+              class="text-caption text-weight-bold"
+              @click="abrirModal"
+              no-caps
             />
-          </template>
-        </q-input>
-        <br />
+          </div>
 
-        <p class="RC" @click="abrirModal()">¿Olvidaste tu contraseña?</p>
+          <q-btn
+            :loading="adminStore.loading"
+            class="full-width q-mt-lg"
+            color="primary"
+            label="Iniciar Sesión"
+            type="submit"
+            unelevated
+            rounded
+          />
+        </q-form>
+      </q-card-section>
+    </q-card>
 
-        <q-btn 
-          :loading="adminStore.loading" 
-          class="button" 
-          @click="pasarUsuario" 
-          label="Ingresar" 
-        />
-      </div>
-    </div>
+    <!-- MODAL RECUPERAR CONTRASEÑA -->
+    <q-dialog v-model="modalRecuperar" persistent>
+      <q-card flat bordered style="min-width: 350px; border-radius: 8px;">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold text-primary">Recuperar Clave</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup @click="cerrarModal" />
+        </q-card-section>
 
-    <div v-if="modalRecuperar" class="overlay"></div>
-    <div v-if="modalRecuperar" class="modal">
-      <div class="modal-header">
-        <h2 style="text-align: start;">RESTABLECER CONTRASEÑA</h2>
-        <img class="logoSena" src="../IMG/logo-sena-blanco.png" alt="SENA" />
-      </div>
+        <q-card-section class="q-pa-lg">
+          <div class="text-body2 text-grey-8 q-mb-md">
+            Se enviará un enlace de restablecimiento al correo electrónico vinculado a su cuenta.
+          </div>
+          <q-input
+            outlined
+            dense
+            v-model="correoRecuperar"
+            label="Correo electrónico"
+            type="email"
+            autofocus
+          >
+            <template v-slot:prepend>
+              <q-icon name="alternate_email" color="primary" size="20px" />
+            </template>
+          </q-input>
+        </q-card-section>
 
-      <div class="modal-body">
-        <h6 class="texRc">Ingresa tu correo electrónico y te enviaremos
-un enlace para restablecer tu contraseña.</h6>
-        
-        <q-input 
-          filled 
-          v-model="correoRecuperar" 
-          label="Correo electrónico" 
-          type="email" 
-          clearable 
-          class="input-modal" 
-        />
-      </div>
-
-      <div class="modal-actions">
-        <q-btn 
-          class="openBTN" 
-          label="ENVIAR ENLACE" 
-          :loading="loading" 
-          @click="enviarCorreo" 
-        />
-        <q-btn flat class="closeBTN" label="CERRAR" @click="cerrarModal" />
-      </div>
-    </div>
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancelar" color="grey-7" @click="cerrarModal" v-close-popup />
+          <q-btn
+            unelevated
+            color="primary"
+            label="Enviar Enlace"
+            :loading="loading"
+            @click="enviarCorreo"
+            rounded
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router"; 
 import { useAdminStore } from "../store/administrador.js";
 import { Notify } from "quasar";
-import api from '../services/api.js'; 
 import { getCorreo } from "../services/servicesComponent.js";
 
 const router = useRouter();
@@ -94,16 +128,6 @@ const isPwd = ref(true);
 const correoRecuperar = ref("");
 const modalRecuperar = ref(false);
 const loading = ref(false);
-
-// Manejo de teclado (opcional si ya usas @keydown.enter en q-input)
-const handleEnter = (event) => {
-  if (event.key === "Enter") pasarUsuario();
-};
-
-onMounted(() => window.addEventListener("keydown", handleEnter));
-onBeforeUnmount(() => window.removeEventListener("keydown", handleEnter));
-
-
 
 const enviarCorreo = async () => {
   if (!correoRecuperar.value) {
@@ -143,19 +167,16 @@ async function pasarUsuario() {
   }
 
   try {
-    // 1. Llamar al login
     const response = await adminStore.inicio({
       gmail: gmail.value.trim(),
       password: password.value.trim()
     });
     
-    // 2. Extraer datos de la respuesta (ajustar según la estructura de tu backend)
     const token = response.token;
     const user = response.user;
 
     if (!token || !user) throw new Error("Respuesta inválida del servidor");
 
-    // 3. Validar estado (1 = Activo)
     if (Number(user.state) !== 1) {
       Notify.create({ 
         position: "top", 
@@ -167,7 +188,6 @@ async function pasarUsuario() {
       return;
     }
 
-    // 4. GUARDAR TODO EN LOCALSTORAGE (Importante el orden)
     localStorage.setItem("token", token);
     localStorage.setItem("userId", user._id || "");
     localStorage.setItem("rol", user.rol?.toString() || "");
@@ -182,8 +202,6 @@ async function pasarUsuario() {
     });
 
     limpiarFormulario();
-    
-    // 5. Redirigir
     router.push({ name: "dashboard" });
 
   } catch (error) {
@@ -199,5 +217,13 @@ const cerrarModal = () => { modalRecuperar.value = false; correoRecuperar.value 
 </script>
 
 <style scoped>
-@import url("../style/login.css");
+.login-page {
+  height: 100vh;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+}
 </style>

@@ -22,7 +22,9 @@
     "sweetalert2": "^11.26.2",
     "twilio": "^5.10.4",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "apexcharts": "^5.6.0",
+    "vue3-apexcharts": "^1.10.0"
   },
   "devDependencies": {
     "@quasar/vite-plugin": "^1.10.0",

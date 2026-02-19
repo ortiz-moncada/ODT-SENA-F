@@ -1,50 +1,50 @@
-:root{
-    /*Basic colors*/
-    --black--:#000000;
-    --white--:#FFFFFF;
-    --gray--:#BDBDBD;
-    --grayTwo--:#9E9E9E;
-;
-
-    /*Corporations colors*/
-    --oneColor--:#39A900;
-    --twoColor--:#2A7F00;
-    --threeColor--:#F5F5F5;
-
-    /*Alerts colors */
-    --fourColor--:#00FF00;
-    --fiveColor--:#FFF800;
-    --sixColor--:#FF9100;
-    --sevenColor--:#FF0000;
-
-    --eightColor--:#bae4a6;
-    --nineColor--:#ff2b2b;
+:root {
+  --primary: #39A900;
+  --secondary: #2A7F00;
+  --accent: #F5F5F5;
+  --background: #f5f7f9;
+  --surface: #ffffff;
+  --text-main: #2c3e50;
+  --text-muted: #7f8c8d;
 }
 
 body {
-  background: var(--threeColor--);
-    margin: 0%;
-  font-family: 'Carlito', sans-serif; /* Base */
-}
-
-h1 {
+  background: var(--background);
+  color: var(--text-main);
   margin: 0;
-  font-family: 'Poppins', sans-serif; /* Reemplazo Century Gothic */
-  font-size: 44px !important;  /* usa px en lugar de pt */
+  font-family: 'Poppins', 'Carlito', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h2 {
-    margin: 0%;
-  font-family: 'Montserrat'; /* Reemplazo de Gotham */
-  font-size: 27px !important;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Montserrat', sans-serif;
   font-weight: 700;
+  margin-top: 0;
 }
 
-h3 {
-    margin: 0%;
-  font-family: 'Carlito', sans-serif; /* Reemplazo de Calibri */
-  font-size: 24px !important;
-  font-weight: 400;
+.text-primary { color: var(--primary) !important; }
+.bg-primary { background: var(--primary) !important; }
+
+.container-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
 
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}

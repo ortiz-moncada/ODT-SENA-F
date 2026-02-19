@@ -1,33 +1,64 @@
 <template>
-  <div class="containerS">
-    <div class="reset-card">
-      <div class="imgContainer">
-        <img src="../IMG/compu.png" style="max-height: 400px; margin-top: 100px;" alt="compu">
-      </div>
-      <div class="cardInfo">
+  <div class="reset-page flex flex-center bg-grey-2">
+    <q-card flat bordered class="reset-card shadow-1">
+      <q-card-section class="bg-white text-center q-pt-xl q-pb-md">
+        <q-img src="../IMG/logosena.png" style="width: 70px" class="q-mb-md" />
+        <div class="text-h5 text-weight-bold text-primary">ODT - RESTABLECER</div>
+        <div class="text-caption text-grey-7 uppercase text-weight-bold" style="letter-spacing: 1px;">Gestión de Seguridad</div>
+      </q-card-section>
 
-        <!-- HEADER -->
-        <div class="reset-header">
-          <h5>Restablecer contraseña</h5>
-          <img class="LSB" src="../IMG/logosena.png" alt="logoSena">
+      <q-card-section class="q-px-xl q-pb-xl">
+        <div class="text-center q-mb-lg">
+          <p class="text-body2 text-grey-7">Ingrese su nueva contraseña de acceso para recuperar el ingreso a su cuenta.</p>
         </div>
 
-        <!-- BODY -->
-        <q-card-section class="q-pa-lg">
-          <q-input v-model="password" type="password" label="Nueva contraseña" outlined dense
-            hint="Mínimo 6 caracteres" />
-        </q-card-section>
+        <q-form @submit="cambiarPassword" class="q-gutter-y-md">
+          <q-input
+            v-model="password"
+            :type="isPwd ? 'password' : 'text'"
+            label="Nueva Contraseña"
+            outlined
+            dense
+            hint="Mínimo 6 caracteres"
+            lazy-rules
+            :rules="[val => !!val || 'Campo obligatorio', val => val.length >= 6 || 'Mínimo 6 caracteres']"
+          >
+            <template v-slot:prepend>
+              <q-icon name="lock" color="primary" size="20px" />
+            </template>
+            <template v-slot:append>
+              <q-icon
+                :name="isPwd ? 'visibility_off' : 'visibility'"
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+                size="20px"
+              />
+            </template>
+          </q-input>
 
-        <!-- ACTIONS -->
-        <q-card-actions align="center" class="q-pb-lg">
-          <q-btn class="full-width" style="background: var(--oneColor--); color: var(--white--);"
-            label="ACTUALIZAR CONTRASEÑA" :loading="loading" @click="cambiarPassword" />
-        </q-card-actions>
-      </div>
-    </div>
+          <div class="q-mt-xl">
+            <q-btn
+              :loading="loading"
+              class="full-width"
+              color="primary"
+              label="Actualizar Clave"
+              type="submit"
+              unelevated
+              rounded
+            />
+            <q-btn
+              flat
+              color="grey-7"
+              label="Regresar al Inicio"
+              class="full-width q-mt-md"
+              to="/login"
+              no-caps
+            />
+          </div>
+        </q-form>
+      </q-card-section>
+    </q-card>
   </div>
-
-
 </template>
 
 <script setup>
@@ -39,6 +70,7 @@ import api from "../services/api.js";
 const route = useRoute();
 const router = useRouter();
 const password = ref("");
+const isPwd = ref(true);
 const loading = ref(false);
 
 const cambiarPassword = async () => {
@@ -61,7 +93,7 @@ const cambiarPassword = async () => {
 
     Notify.create({
       type: "positive",
-      message: "Contraseña actualizada correctamente. Inicia sesión.",
+      message: "Contraseña actualizada correctamente. Proceda a iniciar sesión.",
       position: "top",
     });
 
@@ -69,51 +101,22 @@ const cambiarPassword = async () => {
   } catch (error) {
     Notify.create({
       type: "negative",
-      message: error.response?.data?.message || "Token inválido o expirado",
+      message: error.response?.data?.message || "El enlace ha expirado o es inválido",
     });
   } finally {
     loading.value = false;
   }
 };
 </script>
+
 <style scoped>
-.reset-card {
-  background: var(--white--);
-  width: 80%;
-  height: 90vh;
-  border-radius: 10px;
-  display: grid;
-  grid-template-columns: 50% 50%;
-  box-shadow: rgb(9, 120, 9) 0px 0px 20px 5px;
-}
-
-
-.reset-header {
-  color: var(--oneColor--);
-}
-
-.LSB {
-  position: absolute;
-  width: 90px;
-  height: auto;
-  margin-top: -200px;
-  margin-left: -3%;
-}
-
-.containerS {
-  background-image:url(../IMG/fondo.png);
+.reset-page {
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.imgContainer{
-  background: var(--oneColor--);
-  border-radius: 10px 0px 0px 10px;
-}
-.cardInfo{
-  text-align: center;
-  padding-top: 30%;
 }
 
+.reset-card {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+}
 </style>

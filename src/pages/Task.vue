@@ -1,420 +1,401 @@
 <template>
-  <div v-if="showCreate" class="overlay"></div>
- <div v-if="showCreate" class="modal">
-  <div class="modal-header">
-    <h2>Crear tarea</h2>
-  </div>
-
-  <div class="modal-body">
-    <div class="form-grid">
-      <div class="form-col">
-        <q-input filled v-model="name" label="Nombre de la tarea" />
-        
-        <q-input 
-          v-if="!isMonthly" 
-          filled 
-          v-model="date" 
-          type="date" 
-          :min="hoy" 
-          label="Fecha de entrega" 
-        />
-
-        <q-select filled v-model="workers" :options="workersList" option-label="names" option-value="_id"
-          label="Trabajadores asignados" emit-value map-options multiple use-chips />
-
-        <q-select v-if="workers.length > 1" filled v-model="leader"
-          :options="workersList.filter(w => workers.includes(w._id))" option-label="names" option-value="_id"
-          label="Líder de la tarea" emit-value map-options />
-
-        <q-toggle v-model="isMonthly" label="Tarea mensual" />
-      </div>
-
-      <div class="form-col">
-        <q-input filled v-model="description" type="textarea" label="Descripción" autogrow />
-
-        <div class="file-box">
-          <q-btn dense flat icon="attach_file" @click="subirArchivoCrear" />
-          <span>Adjuntar archivo</span>
-          <div v-if="crearArchivo"><b>Archivo:</b> {{ crearArchivo.name }}</div>
-          <div v-if="crearLink"><b>Link:</b> {{ crearLink }}</div>
-        </div>
-
-        <div v-if="isMonthly" class="q-gutter-y-sm">
-          <q-input filled v-model.number="monthlyDay" type="number" min="1" max="28" label="Día del mes (1-28)" />
-          <q-input 
-            filled 
-            v-model.number="monthlyPlazo" 
-            type="number" 
-            min="1" 
-            label="Plazo de repetición (Meses)" 
-            hint="¿Cuántos meses se debe generar esta tarea?" 
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-footer">
-    <q-btn :loading="loading" label="Crear tarea" style="background: var(--oneColor--); color: var(--white--);"
-      @click="crearTarea" />
-    <q-btn flat label="Cancelar" @click="showCreate = false"
-      style="background: var(--sevenColor--); color: var(--white--);" />
-  </div>
-</div>
-
-  <div v-if="showEdit" class="overlay"></div>
-  <div v-if="showEdit" class="modal-edit">
-
-    <div class="modal-header-edit">
-      <h2>Editar Tarea</h2>
-    </div>
-
-    <div class="modal-body-edit">
-      <div class="form-grid-edit">
-        <!-- COLUMNA IZQUIERDA -->
-        <div class="form-col-edit">
-          <q-input filled v-model="editName" label="Nombre de la tarea" />
-          <q-input filled v-model="editDate" type="date" label="Fecha de entrega" />
-          <q-select filled v-model="editState" :options="[
-
-            { label: 'Completada', value: 3 },
-            { label: 'Rechazada', value: 4 },
-          ]" label="Estado de la tarea" emit-value map-options />
-        </div>
-        <!-- COLUMNA DERECHA -->
-        <div class="form-col-edit">
-          <q-input filled v-model="editDescription" type="textarea" label="Descripción" autogrow />
-          <q-select filled v-model="editWorkers" :options="workersList" option-label="names" option-value="_id"
-            label="Trabajadores asignados" emit-value map-options multiple use-chips />
-
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer-edit">
-      <q-btn :loading="loading" style="background: var(--oneColor--); color: var(--white--);"
-        @click="actualizarTarea">ACTUALIZAR
-      </q-btn>
-
-      <q-btn @click="showEdit = false" style="background: var(--sevenColor--); color: var(--white--);">CERRAR
-      </q-btn>
-    </div>
-
-  </div>
-
-
-  <div v-if="showDetails" class="overlay"></div>
-
-<div v-if="showDetails" class="modal-details">
-    <!-- HEADER -->
-    <div class="modal-header-details">
-      <h2>Detalles de la Tarea</h2>
-    </div>
-
-    <!-- BODY -->
-    <div class="modal-body-details">
-
-      <div class="details-grid">
-
-        <!-- INFO TAREA -->
-        <div class="card">
-          <h3 class="card-title">
-            Información de la tarea
-            <img src="https://cdn-icons-png.flaticon.com/128/6389/6389264.png" />
-          </h3>
-
-          <p><span>Nombre:</span> {{ selectedTask.name }}</p>
-          <p><span>Descripción:</span> {{ selectedTask.description }}</p>
-
-          <p class="estado">
-            <span>Estado:</span>
-            <q-chip :label="stateMap[selectedTask.stateTask]?.label" :color="stateMap[selectedTask.stateTask]?.color"
-              text-color="white" size="sm" />
-          </p>
-        </div>
-
-        <!-- ENCARGADOS -->
-        <div class="card">
-          <h3 class="card-title">
-            Encargado
-            <img src="https://cdn-icons-png.flaticon.com/128/8237/8237612.png" />
-          </h3>
-          <p>
-            <span>Trabajadores:</span>
-            {{selectedTask.workers?.map(w => w.names).join(', ')}}
-          </p>
-        </div>
-
-        <!-- FECHA -->
-<div class="card">
-  <h3 class="card-title">
-    Fecha
-    <img src="https://cdn-icons-png.flaticon.com/128/8302/8302434.png" />
-  </h3>
-
-  <p>
-    <span>Fecha de creación:</span> 
-    {{ selectedTask.createdAt ? formatDate(selectedTask.createdAt) : 'No disponible' }}
-  </p>
-
-  <template v-if="selectedTask.isMonthly">
-    <p>
-      <span>Recurrencia:</span>
-      Todos los días {{ selectedTask.monthlyDay }} de cada mes
-    </p>
-    <p>
-      <span>Plazo total:</span>
-      {{ selectedTask.monthlyPlazo || 'Sin plazo definido' }} meses
-    </p>
-  </template>
-
-  <p v-else>
-    <span>Fecha de entrega:</span>
-    {{ selectedTask.delivery_date ? formatDate(selectedTask.delivery_date) : 'Sin fecha' }}
-  </p>
-</div>
-
-        <!-- ARCHIVOS -->
-        <div class="card">
-          <div class="card-archivos">
-            <h3 class="card-title">Archivos Adjuntos 🖇️</h3>
-
-            <div v-if="selectedTask.attached_files?.length" class="file-list">
-              <a v-for="(file, index) in selectedTask.attached_files" :key="index" :href="file.url" target="_blank"
-                class="file-item">
-                {{ file.name || ('Archivo ' + (index + 1)) }}
-              </a>
-            </div>
-
-            <p v-else class="empty">Sin archivos adjuntos</p>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="modal-footer-details">
- <div class="modal-footer-details">
-  <div class="modal-footer-details">
-  <template v-if="rol !== 3">
-    <q-btn 
-      class="approvedTask" 
-      :loading="loading"
-      style="background: var(--oneColor--); color: var(--white--);"
-      @click="cambiarEstadoTarea(selectedTask._id, 3)"
-    >Aprobar</q-btn>
-  </template>
-  
-  <q-btn 
-    class="close-btn" 
-    style="background: var(--sevenColor--); color: var(--white--);"
-    @click="showDetails = false"
-  >CERRAR</q-btn>
-
-  <template v-if="rol !== 3">
-    <q-btn 
-      class="denyTask" 
-      :loading="loading"
-      style="background: var(--nineColor--); color: var(--white--);"
-      @click="cambiarEstadoTarea(selectedTask._id, 4)"
-    >Rechazar</q-btn>
-  </template>
-</div>
-</div>
-    </div>
-
-</div>
-
-
- <div v-if="showEntregaWorker" class="overlay"></div>
-
-<div v-if="showEntregaWorker" class="modal">
-
-  <!-- HEADER -->
-  <div class="modal-header">
-    <h1 style="font-weight: 600px;">Entregar tarea</h1>
-  </div>
-
-  <!-- BODY -->
-  <div class="modal-body">
-
-    <div class="deliver-info">
-      <h3 class="section-title">Información de la tarea</h3>
-
-      <p><span>Título:</span> {{ tareaEntrega?.name }}</p>
-      <p class="deliver-description">
-        <span>Descripción:</span> {{ tareaEntrega?.description }}
-      </p>
-    </div>
-
-    <div class="deliver-actions">
-      <q-btn
-        color="primary"
-        icon="attach_file"
-        label="Adjuntar archivo"
-        @click="seleccionarArchivoEntrega"
-      />
-
-      <div v-if="entregaFile" class="file-preview">
-        <q-icon name="description" size="20px" />
-        <span>{{ entregaFile.name }}</span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- FOOTER -->
-  <div class="modal-footer">
-    <q-btn
-      :loading="loading"
-      label="ENTREGAR"
-      style="background: var(--oneColor--); color: white"
-      @click="entregarTareaWorker"
-    />
-    <q-btn
-      flat
-      label="CERRAR"
-      style="background: var(--sevenColor--); color: white"
-      @click="showEntregaWorker = false"
-    />
-  </div>
-
-</div>
-
-
   <Layouts_main>
-    <h1 style="text-align: center;" :style="{ color: 'var(--oneColor--)' }">TAREAS</h1>
-    <hr><br>
-    <div class="header-principal">
-    <q-input v-model="search" dense outlined style="max-width: 400px; margin-left: 2%;" label="BUSCAR TAREA POR NOMBRE">
-      <template v-slot:append>
-        <q-btn flat dense round>
-          <img
-            src="https://upload.wikimedia.org/wikipedia/meta/thumb/7/7e/Vector_search_icon.svg/1890px-Vector_search_icon.svg.png"
-            style="width: 18px; height: 18px;" />
-        </q-btn>
-      </template>
-    </q-input>
-
-   <q-btn-dropdown class="Az" :label="ordenLabel">
-  <q-list>
-    <q-item clickable v-close-popup @click="setOrden('desc', 'Más recientes')">
-      <q-item-section>Más recientes</q-item-section>
-    </q-item>
-    <q-item clickable v-close-popup @click="setOrden('asc', 'Más antiguas')">
-      <q-item-section>Más antiguas</q-item-section>
-    </q-item>
-  </q-list>
-</q-btn-dropdown>
-
-    <q-btn-dropdown class="Es" :label="estadoLabel">
-      <q-list>
-        <q-item clickable v-close-popup @click="setEstado(1, 'En Desarrollo')">
-          <q-item-section>En Desarrollo</q-item-section>
-        </q-item>
-        <q-item clickable v-close-popup @click="setEstado(2, 'En Revisión')">
-          <q-item-section>En Revisión</q-item-section>
-        </q-item>
-        <q-item clickable v-close-popup @click="setEstado(3, 'Completada')">
-          <q-item-section>Completada</q-item-section>
-        </q-item>
-        <q-item clickable v-close-popup @click="setEstado(4, 'Rechazada')">
-          <q-item-section>Rechazada</q-item-section>
-        </q-item>
-        <q-item clickable v-close-popup @click="setEstado(5, 'Vencida')">
-          <q-item-section>Vencida</q-item-section>
-        </q-item>
-      </q-list>
-    </q-btn-dropdown>
-
-    <q-btn v-if="rol !== 3" :style="{ backgroundColor: 'var(--twoColor--)', color: 'white' }" label="CREAR +"
-     @click="showCreate = !showCreate" />
+    <div class="row items-center q-mb-lg">
+      <div class="col">
+        <h1 class="text-h4 text-weight-bold text-primary q-my-none">TAREAS</h1>
+      </div>
+      <div class="col-auto">
+        <q-btn
+          v-if="rol !== 3"
+          color="primary"
+          icon="add"
+          label="Crear Tarea"
+          @click="showCreate = true"
+          unelevated
+          rounded
+        />
+      </div>
     </div>
 
-    <div class="q-pa-md">
-      <q-table style="text-align: center; height: 400px; width: 97%; margin-left: 1%;" flat bordered
-        :rows="filteredTasks" :columns="columns" row-key="_id" v-model:pagination="pagination"
-        :rows-per-page-options="[0]" :no-data-label="' '">
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section class="row q-col-gutter-md items-center">
+        <div class="col-12 col-sm-4">
+          <q-input
+            v-model="search"
+            dense
+            outlined
+            placeholder="Buscar tarea..."
+            clearable
+          >
+            <template v-slot:prepend>
+              <q-icon name="search" />
+            </template>
+          </q-input>
+        </div>
 
-        <template v-slot:body-cell-opcions="props">
-          <q-td :props="props" class="text-center">
-            <q-btn v-if="rol != 3" size="sm" color="primary" icon="edit" round dense class="q-ml-sm"
-              @click="abrirEditar(props.row)" />
+        <div class="col-6 col-sm-3">
+          <q-btn-dropdown
+            outline
+            color="grey-7"
+            :label="ordenLabel"
+            class="full-width"
+            icon="sort"
+          >
+            <q-list>
+              <q-item clickable v-close-popup @click="setOrden('desc', 'Más recientes')">
+                <q-item-section>Más recientes</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setOrden('asc', 'Más antiguas')">
+                <q-item-section>Más antiguas</q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
 
-           <q-btn v-if="rol === 3 && esLider(props.row) && props.row.stateTask !== 2 && props.row.stateTask !== 3 && props.row.stateTask !== 5"
-  size="sm" 
-  color="green" 
-  icon="upload" 
-  round 
-  dense 
-  class="q-ml-sm"
-  @click="abrirEntregaWorker(props.row)" 
-/>
+        <div class="col-6 col-sm-3">
+          <q-btn-dropdown
+            outline
+            color="grey-7"
+            :label="estadoLabel"
+            class="full-width"
+            icon="filter_list"
+          >
+            <q-list>
+              <q-item clickable v-close-popup @click="setEstado(null, 'Todos los Estados')">
+                <q-item-section>Todos</q-item-section>
+              </q-item>
+              <q-item v-for="(val, key) in stateMap" :key="key" clickable v-close-popup @click="setEstado(key, val.label)">
+                <q-item-section>{{ val.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
+      </q-card-section>
+    </q-card>
 
-            <q-btn size="sm" color="secondary" icon="visibility" round dense class="q-ml-sm"
-              @click="verDetalles(props.row)" />
-          </q-td>
-        </template>
+    <q-table
+      flat
+      bordered
+      :rows="filteredTasks"
+      :columns="columns"
+      row-key="_id"
+      v-model:pagination="pagination"
+      :rows-per-page-options="[10, 20, 50, 0]"
+      :loading="loading"
+      loading-label="Cargando cronograma de tareas..."
+    >
+      <template v-slot:loading>
+        <q-inner-loading showing color="primary">
+          <q-spinner-dots size="40px" color="primary" />
+        </q-inner-loading>
+      </template>
 
-        <template v-slot:body-cell-stateTask="props">
-          <q-td :props="props">
-            <q-chip :label="stateMap[props.row.stateTask]?.label" :color="stateMap[props.row.stateTask]?.color"
-              text-color="white" size="sm" class="q-mx-sm" />
-          </q-td>
-        </template>
+      <template v-slot:body-cell-opcions="props">
+        <q-td :props="props" class="q-gutter-xs text-center">
+          <q-btn
+            v-if="rol !== 3"
+            size="sm"
+            flat
+            round
+            color="primary"
+            icon="edit"
+            @click="abrirEditar(props.row)"
+          >
+            <q-tooltip>Modificar Tarea</q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="rol === 3 && esLider(props.row) && props.row.stateTask !== 2 && props.row.stateTask !== 3 && props.row.stateTask !== 5"
+            size="sm"
+            flat
+            round
+            color="positive"
+            icon="cloud_upload"
+            @click="abrirEntregaWorker(props.row)"
+          >
+            <q-tooltip>Cargar Entrega</q-tooltip>
+          </q-btn>
+          <q-btn
+            size="sm"
+            flat
+            round
+            color="secondary"
+            icon="visibility"
+            @click="verDetalles(props.row)"
+          >
+            <q-tooltip>Ver Detalles</q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-        <template v-slot:body-cell-isMonthly="props">
-          <q-td :props="props" class="text-center">
-            {{ props.row.isMonthly ? 'Sí' : 'No' }}
-          </q-td>
-        </template>
+      <template v-slot:body-cell-stateTask="props">
+        <q-td :props="props" class="text-center">
+          <q-chip
+            :label="stateMap[props.row.stateTask]?.label"
+            :color="stateMap[props.row.stateTask]?.color"
+            text-color="white"
+            size="sm"
+            class="text-weight-bold"
+            dense
+          />
+        </q-td>
+      </template>
 
       <template v-slot:body-cell-attached_files="props">
-  <q-td :props="props">
-    <div v-if="props.row.attached_files && props.row.attached_files.length">
-      <div v-for="(file, index) in props.row.attached_files" :key="index" class="q-mb-xs">
-        <q-icon name="insert_drive_file" size="xs" color="primary" />
-        <a :href="file.url || `${API_URL}/${file.path}`" 
-           target="_blank"
-           style="color: #1976d2; text-decoration: none; font-weight: 500;">
-          {{ file.name || `Archivo ${index + 1}` }}
-        </a>
-      </div>
-    </div>
-    <span v-else class="text-grey-6">Sin archivos</span>
-  </q-td>
-</template>
-
-        <template v-slot:no-data>
-          <div class="full-width column flex-center text-grey-7 q-pa-lg">
-            <img src="../IMG/pregunta (1).png" alt="Sin datos" style="max-width: 15%; margin-bottom: 10px;" />
-            <h5 v-if="tasks.length === 0"> No hay tareas registradas </h5>
-            <h5 v-else> No hay tareas con los filtros aplicados </h5>
+        <q-td :props="props" class="text-center">
+          <div v-if="props.row.attached_files?.length">
+            <q-btn flat dense round size="sm" icon="description" color="primary">
+              <q-badge color="negative" floating style="width: 12px; height: 12px; padding: 2px; min-height: 0;">{{ props.row.attached_files.length }}</q-badge>
+              <q-menu>
+                <q-list dense style="min-width: 180px">
+                  <q-item-label header class="text-weight-bold">Archivos Adjuntos</q-item-label>
+                  <q-item v-for="(file, index) in props.row.attached_files" :key="index" clickable v-close-popup tag="a" :href="file.url" target="_blank">
+                    <q-item-section avatar><q-icon name="insert_drive_file" color="grey-7" size="20px" /></q-item-section>
+                    <q-item-section class="text-caption">{{ file.name || `Documento ${index + 1}` }}</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
           </div>
-        </template>
+          <span v-else class="text-grey-5 text-caption">N/A</span>
+        </q-td>
+      </template>
 
-        <template v-slot:body-cell-description="props">
-  <q-td :props="props">
-    <div style="white-space: normal; line-height: 1.2;">
-      {{ props.row.description && props.row.description.length > 50
-        ? props.row.description.substring(0, 50) + '...'
-        : props.row.description }}
-    </div>
-  </q-td>
-</template>
+      <template v-slot:no-data>
+        <div class="full-width column flex-center text-grey-7 q-pa-xl">
+          <q-icon name="assignment_turned_in" size="64px" color="grey-4" />
+          <div class="text-h6 q-mt-md text-weight-regular">
+            {{ tasks.length === 0 ? 'Sin tareas registradas' : 'No se encontraron coincidencias' }}
+          </div>
+        </div>
+      </template>
+    </q-table>
 
-<template v-slot:body-cell-name="props">
-  <q-td :props="props">
-    <span :title="props.row.name"> {{ props.row.name && props.row.name.length > 20
-        ? props.row.name.substring(0, 20) + '...'
-        : props.row.name }}
-    </span>
-  </q-td>
-</template>
+    <!-- MODAL CREAR TAREA -->
+    <q-dialog v-model="showCreate" persistent transition-show="scale" transition-hide="scale">
+      <q-card flat bordered style="width: 800px; max-width: 90vw; border-radius: 8px;">
+        <q-card-section class="bg-white text-primary row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold">Programar Nueva Tarea</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup @click="limpiarFormulario" />
+        </q-card-section>
 
-      </q-table>
-    </div>
+        <q-card-section class="q-pa-lg">
+          <q-form class="row q-col-gutter-md">
+            <div class="col-12 col-md-6">
+              <q-input outlined v-model="name" label="Título de la actividad" class="q-mb-sm" dense />
+              <q-input v-if="!isMonthly" outlined v-model="date" type="date" :min="hoy" label="Fecha Límite" class="q-mb-sm" dense />
+              <q-select
+                outlined
+                v-model="workers"
+                :options="workersList"
+                option-label="names"
+                option-value="_id"
+                label="Asignar Colaboradores"
+                multiple
+                use-chips
+                emit-value
+                map-options
+                class="q-mb-sm"
+                dense
+              />
+              <q-select
+                v-if="workers.length > 1"
+                outlined
+                v-model="leader"
+                :options="workersList.filter(w => workers.includes(w._id))"
+                option-label="names"
+                option-value="_id"
+                label="Definir Responsable Principal"
+                emit-value
+                map-options
+                class="q-mb-sm"
+                dense
+              />
+              <q-toggle v-model="isMonthly" label="Actividad Recurrente (Mensual)" color="primary" dense />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <q-input outlined v-model="description" type="textarea" label="Descripción de la Tarea" autogrow class="q-mb-sm" dense />
+              
+              <div class="bg-grey-1 q-pa-md rounded-borders border-grey-3 q-mb-md">
+                <div class="text-caption text-weight-bold text-grey-7 q-mb-sm uppercase">Gestión de Archivos</div>
+                <div class="row items-center q-gutter-sm">
+                  <q-btn color="primary" unelevated size="sm" icon="attach_file" label="Adjuntar Guía" @click="subirArchivoCrear" />
+                  <span v-if="crearArchivo" class="text-caption text-weight-medium text-primary ellipsis" style="max-width: 150px">{{ crearArchivo.name }}</span>
+                </div>
+              </div>
+
+              <div v-if="isMonthly" class="q-gutter-y-sm bg-green-1 q-pa-md rounded-borders border-primary">
+                <div class="text-caption text-weight-bold text-primary">PARAMETRIZACIÓN RECURRENTE</div>
+                <q-input outlined v-model.number="monthlyDay" type="number" min="1" max="28" label="Día de Ejecución (1-28)" dense bg-color="white" />
+                <q-input outlined v-model.number="monthlyPlazo" type="number" min="1" label="Vigencia en Meses" dense bg-color="white" />
+              </div>
+            </div>
+          </q-form>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup @click="limpiarFormulario" />
+          <q-btn unelevated color="primary" label="Crear Tarea" :loading="loading" @click="crearTarea" rounded class="q-px-lg" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL EDITAR TAREA -->
+    <q-dialog v-model="showEdit" persistent transition-show="scale" transition-hide="scale">
+      <q-card flat bordered style="width: 750px; max-width: 90vw; border-radius: 8px;">
+        <q-card-section class="bg-white text-primary row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold">Actualizar Información de Tarea</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg">
+          <q-form class="row q-col-gutter-md">
+            <div class="col-12 col-md-6">
+              <q-input outlined v-model="editName" label="Título de la tarea" class="q-mb-sm" dense />
+              <q-input outlined v-model="editDate" type="date" label="Nueva Fecha Límite" class="q-mb-sm" dense />
+              <q-select
+                outlined
+                v-model="editState"
+                :options="[{ label: 'Completada (Validada)', value: 3 }, { label: 'Rechazada (Revisión)', value: 4 }]"
+                label="Cambiar Estado de Gestión"
+                emit-value
+                map-options
+                dense
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input outlined v-model="editDescription" type="textarea" label="Ajustar Descripción" autogrow class="q-mb-sm" dense />
+              <q-select
+                outlined
+                v-model="editWorkers"
+                :options="workersList"
+                option-label="names"
+                option-value="_id"
+                label="Actualizar Equipo"
+                multiple
+                use-chips
+                emit-value
+                map-options
+                dense
+              />
+            </div>
+          </q-form>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Descartar" color="grey-7" v-close-popup />
+          <q-btn unelevated color="primary" label="Actualizar Registro" :loading="loading" @click="actualizarTarea" rounded class="q-px-lg" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL DETALLES - SIN AVATARES -->
+    <q-dialog v-model="showDetails">
+      <q-card flat bordered style="width: 600px; max-width: 95vw; border-radius: 8px;">
+        <q-card-section class="row items-center q-pb-md">
+          <div class="text-h6 text-weight-bold">Detalles de Tarea</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-px-lg q-pb-md">
+          <div class="column items-center q-mb-lg">
+            <q-icon name="assignment" size="48px" color="primary" class="q-mb-sm" />
+            <div class="text-h5 text-weight-bold text-center text-primary">{{ selectedTask.name }}</div>
+            <div class="text-body2 text-grey-7 text-center q-mt-xs q-px-md">{{ selectedTask.description }}</div>
+          </div>
+
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-sm-6">
+              <q-list dense class="rounded-borders border-grey-2">
+                <q-item class="q-py-sm">
+                  <q-item-section avatar><q-icon name="info" color="primary" size="20px" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption class="text-weight-bold uppercase" style="font-size: 9px;">Estado Actual</q-item-label>
+                    <q-item-label>
+                      <q-chip dense :label="stateMap[selectedTask.stateTask]?.label" :color="stateMap[selectedTask.stateTask]?.color" text-color="white" size="xs" />
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item class="q-py-sm">
+                  <q-item-section avatar><q-icon name="event" color="primary" size="20px" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption class="text-weight-bold uppercase" style="font-size: 9px;">Plazo / Recurrencia</q-item-label>
+                    <q-item-label class="text-weight-medium">
+                      {{ selectedTask.isMonthly ? `Día ${selectedTask.monthlyDay} de cada mes` : formatDate(selectedTask.delivery_date) }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-list dense class="rounded-borders border-grey-2">
+                <q-item class="q-py-sm">
+                  <q-item-section avatar><q-icon name="group" color="primary" size="20px" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption class="text-weight-bold uppercase" style="font-size: 9px;">Equipo Asignado</q-item-label>
+                    <q-item-label class="text-caption text-weight-medium">{{ selectedTask.workers?.map(w => w.names).join(', ') }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item v-if="selectedTask.attached_files?.length" class="q-py-sm">
+                  <q-item-section avatar><q-icon name="file_present" color="primary" size="20px" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label caption class="text-weight-bold uppercase" style="font-size: 9px;">Evidencias / Guías</q-item-label>
+                    <div class="row q-gutter-xs q-mt-xs">
+                      <q-btn v-for="(f, i) in selectedTask.attached_files" :key="i" dense flat color="blue-7" icon="download" size="xs" :href="f.url" target="_blank" label="Ver archivo" />
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator inset />
+
+        <q-card-actions align="center" class="q-pa-md q-gutter-md">
+          <template v-if="rol !== 3">
+            <q-btn unelevated color="positive" icon="done_all" label="Aprobar Tarea" @click="cambiarEstadoTarea(selectedTask._id, 3)" :loading="loading" rounded class="q-px-md" />
+            <q-btn unelevated color="negative" icon="history_edu" label="Solicitar Corrección" @click="cambiarEstadoTarea(selectedTask._id, 4)" :loading="loading" rounded class="q-px-md" />
+          </template>
+          <q-btn flat label="Cerrar" color="grey-7" v-close-popup class="q-px-md" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- MODAL ENTREGAR TAREA (TRABAJADOR) -->
+    <q-dialog v-model="showEntregaWorker" persistent transition-show="slide-up" transition-hide="slide-down">
+      <q-card flat bordered style="width: 500px; max-width: 90vw; border-radius: 8px;">
+        <q-card-section class="bg-primary text-white row items-center">
+          <div class="text-h6 text-weight-bold">Consignar Evidencia de Tarea</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pa-lg">
+          <div class="text-subtitle1 text-weight-bold text-primary">{{ tareaEntrega?.name }}</div>
+          <div class="text-caption text-grey-7 q-mb-lg">{{ tareaEntrega?.description }}</div>
+          
+          <div class="column items-center q-pa-xl bg-grey-1 rounded-borders dashed-border">
+            <q-icon name="drive_folder_upload" size="56px" color="primary" class="q-mb-md" />
+            <div class="text-body2 text-weight-bold text-grey-8 text-center">Seleccione el documento de respaldo</div>
+            <div class="text-caption text-grey-6 text-center q-mb-md">Formatos admitidos: PDF, JPG, PNG, DOCX</div>
+            <q-btn color="primary" label="Cargar Documento" @click="seleccionarArchivoEntrega" unelevated rounded class="q-px-lg" />
+            <div v-if="entregaFile" class="q-mt-md bg-green-1 q-pa-sm rounded-borders row items-center border-primary">
+              <q-icon name="check_circle" color="primary" size="20px" class="q-mr-sm" />
+              <span class="text-caption text-weight-bold text-primary ellipsis" style="max-width: 200px">{{ entregaFile.name }}</span>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated color="positive" icon="send" label="Enviar Entrega" :loading="loading" @click="entregarTareaWorker" rounded class="q-px-lg" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </Layouts_main>
 </template>
 
@@ -422,23 +403,15 @@
 import Layouts_main from '../layouts/layouts_main.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { Notify } from 'quasar'
-import { postTasks, putTasks, createNotification } from '../services/servicesComponent'
+import { postTasks, putTasks } from '../services/servicesComponent'
 import { useAdminStore } from '../store/administrador'
-import api, { API_URL, getAuthHeaders } from '../services/api.js'
+import api, { getAuthHeaders } from '../services/api.js'
 
 const store = useAdminStore()
 const rol = Number(localStorage.getItem('rol'))
 const areaId = store.getUserAreaId || localStorage.getItem('areaId')
 const userId = localStorage.getItem('userId')
 
-console.log(" Task.vue - areaId del store:", store.getUserAreaId)
-console.log(" Task.vue - areaId del localStorage:", localStorage.getItem('areaId'))
-console.log(" Task.vue - areaId final usado:", areaId)
-
-
-const entregaComentario = ref('')
-const entregaArchivo = ref(null)
-const entregaLink = ref('')
 const showCreate = ref(false)
 const showEdit = ref(false)
 const showDetails = ref(false)
@@ -450,7 +423,6 @@ const description = ref('')
 const date = ref('')
 const workers = ref([])
 const crearArchivo = ref(null)
-const crearLink = ref('')
 const editId = ref('')
 const editName = ref('')
 const editDescription = ref('')
@@ -462,11 +434,11 @@ const workersList = ref([])
 const showEntregaWorker = ref(false)
 const entregaFile = ref(null)
 const tareaEntrega = ref(null)
-const estadoLabel = ref('Estado')
+const estadoLabel = ref('Filtrar Estado')
 const leader = ref(null)
 const loading = ref(false)
-const orden = ref("desc") // Recomendado iniciar con "desc" para ver las nuevas primero
-const ordenLabel = ref('Más recientes') // Etiqueta inicial
+const orden = ref("desc")
+const ordenLabel = ref('Más recientes')
 
 const isMonthly = ref(false)
 const monthlyDay = ref(null)
@@ -487,44 +459,28 @@ watch(workers, (newWorkers) => {
 const pagination = ref({ page: 1, rowsPerPage: 10 })
 
 const columns = [
-  { name: 'index', label: '#', field: (row) => row.index, align: 'center' },
-  { name: 'name', label: 'Nombre', field: 'name', align: 'center', sortable: true },
-  { name: 'description', label: 'Descripción', field: 'description', align: 'center', sortable: true },
-  { name: 'workers', label: 'Trabajadores', field: row => row.workers?.map(w => w.names).join(', ') || 'Sin asignar', align: 'center' },
-  { name: 'attached_files', label: 'Archivos' },
-  { name: 'delivery_date', label: 'Fecha Entrega', field: (row) => formatDate(row.delivery_date), align: 'center' },
-  { name: 'isMonthly', label: 'Mensual', align: 'center' },
-  { name: 'delivery_date', label: 'Fecha Entrega', field: (row) => row.isMonthly ? `Día ${row.monthlyDay} (Mensual)` : formatDate(row.delivery_date),align: 'center' },
-  { name: 'stateTask', label: 'Estado' },
-  { name: 'opcions', label: 'Opciones' }
+  { name: 'name', label: 'Tarea', field: 'name', align: 'left', sortable: true },
+  { name: 'workers', label: 'Personal', field: row => row.workers?.map(w => w.names).join(', ') || 'Sin asignar', align: 'left' },
+  { name: 'attached_files', label: 'Adjuntos', align: 'center' },
+  { name: 'delivery_date', label: 'Vencimiento/Día', field: (row) => row.isMonthly ? `Día ${row.monthlyDay}` : formatDate(row.delivery_date), align: 'center' },
+  { name: 'stateTask', label: 'Estado', align: 'center' },
+  { name: 'opcions', label: 'Acciones', align: 'center' }
 ]
 
-// Función para cambiar el estado desde los botones de Detalles
 const cambiarEstadoTarea = async (taskId, nuevoEstado) => {
   try {
     loading.value = true;
-    
-    // El backend suele esperar un objeto con el campo stateTask
-    const payload = {
-      stateTask: nuevoEstado
-    };
-
-    await putTasks(taskId, payload);
-
-    Notify.create({ 
-      type: 'positive', 
-      message: nuevoEstado === 3 ? 'Tarea aprobada' : 'Tarea rechazada' 
-    });
-    
-    showDetails.value = false; // Cerramos el modal
-    await obtenerTareas();     // Refrescamos la tabla
+    await putTasks(taskId, { stateTask: nuevoEstado });
+    Notify.create({ type: 'positive', message: nuevoEstado === 3 ? 'Tarea aprobada' : 'Tarea rechazada' });
+    showDetails.value = false;
+    await obtenerTareas();
   } catch (error) {
-    console.error("Error al cambiar estado:", error);
-    Notify.create({ type: 'negative', message: 'No se pudo cambiar el estado' });
+    Notify.create({ type: 'negative', message: 'Error al cambiar estado' });
   } finally {
     loading.value = false;
   }
 };
+
 const abrirEntregaWorker = (task) => {
   tareaEntrega.value = task
   entregaFile.value = null
@@ -541,30 +497,18 @@ const seleccionarArchivoEntrega = () => {
 
 const entregarTareaWorker = async () => {
   try {
-    if (!entregaFile.value) {
-      return Notify.create({ type: 'negative', message: 'Adjunte un archivo' });
-    }
-
+    if (!entregaFile.value) return Notify.create({ type: 'negative', message: 'Adjunte un archivo' });
     loading.value = true;
     const formData = new FormData();
-    formData.append("file", entregaFile.value); // Coincide con req.files.file
-    formData.append("userId", userId); // Backup por si el token falla
-
-    // IMPORTANTE: Asegúrate que api.post sea el método correcto según tu router
-    const response = await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData, {
-      headers: {
-        ...getAuthHeaders().headers,
-        "Content-Type": "multipart/form-data"
-      }
+    formData.append("file", entregaFile.value);
+    formData.append("userId", userId);
+    await api.post(`/tasks/entregar/${tareaEntrega.value._id}`, formData, {
+      headers: { ...getAuthHeaders().headers, "Content-Type": "multipart/form-data" }
     });
-
     Notify.create({ type: 'positive', message: 'Entrega enviada con éxito' });
     showEntregaWorker.value = false;
-    entregaFile.value = null;
     await obtenerTareas();
-    
   } catch (error) {
-    console.error("Error entrega:", error);
     Notify.create({ type: 'negative', message: error.response?.data?.error || "Error en entrega" });
   } finally {
     loading.value = false;
@@ -572,207 +516,111 @@ const entregarTareaWorker = async () => {
 };
 
 const setOrden = (valor, texto) => { orden.value = valor; ordenLabel.value = texto }
-const setEstado = (valor, texto) => { filterStated.value = valor; estadoLabel.value = texto }
+const setEstado = (valor, texto) => { filterStated.value = valor; estadoLabel.value = texto || 'Todos los Estados' }
 
 const stateMap = {
   1: { label: "En Desarrollo", color: "blue" },
   2: { label: "En Revisión", color: "orange" },
-  3: { label: "Completada", color: "green" },
-  4: { label: "Rechazada", color: "red" },
-  5: { label: "Vencida", color: "grey" }
+  3: { label: "Completada", color: "positive" },
+  4: { label: "Rechazada", color: "negative" },
+  5: { label: "Vencida", color: "grey-7" }
 }
 
 const hoy = new Date().toISOString().slice(0, 10)
 
 const filteredTasks = computed(() => {
   let lista = [...tasks.value]
-
   if (search.value.trim() !== "") {
     const term = search.value.toLowerCase()
-    lista = lista.filter(t =>
-      t.name.toLowerCase().includes(term) ||
-      t.description?.toLowerCase().includes(term) ||
-      t.workers?.map(w => w.names).join(', ').toLowerCase().includes(term)
-    )
+    lista = lista.filter(t => t.name.toLowerCase().includes(term) || t.description?.toLowerCase().includes(term))
   }
   if (filterStated.value !== null) {
     lista = lista.filter(t => Number(t.stateTask) === Number(filterStated.value))
   }
   lista.sort((a, b) => {
-    const fechaA = new Date(a.createdAt || 0).getTime()
-    const fechaB = new Date(b.createdAt || 0).getTime()
-
-    if (orden.value === "desc") {
-      return fechaB - fechaA
-    } else {
-      return fechaA - fechaB
-    }
+    const dA = new Date(a.createdAt || 0).getTime()
+    const dB = new Date(b.createdAt || 0).getTime()
+    return orden.value === "desc" ? dB - dA : dA - dB
   })
-
   return lista
 })
 
 const formatDate = (date) => {
   if (!date) return 'Sin fecha'
   const f = new Date(date)
-  return `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth() + 1).toString().padStart(2, '0')}/${f.getFullYear()}`
+  return f.toLocaleDateString()
 }
 
 const subirArchivoCrear = () => {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = '.pdf,.png,.jpg,.jpeg,.docx'
   input.onchange = e => crearArchivo.value = e.target.files[0]
   input.click()
 }
 
 const crearTarea = async () => {
   try {
-    // 1. Validaciones iniciales de seguridad
-    if (!areaId || areaId === 'undefined' || areaId === 'null') {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'No tienes un área asignada. No puedes crear tareas.' 
-      });
-    }
-
-    if (!name.value || !description.value || workers.value.length === 0) {
-      return Notify.create({ 
-        type: 'negative', 
-        message: 'Complete los campos obligatorios (Nombre, Descripción y Trabajadores)' 
-      });
-    }
-
-    // 2. Validación específica para Tareas Mensuales
-    if (isMonthly.value) {
-      if (!monthlyDay.value || monthlyDay.value < 1 || monthlyDay.value > 28) {
-        return Notify.create({ type: 'negative', message: 'Indique un día válido (1-28) para la tarea mensual' });
-      }
-      if (!monthlyPlazo.value || monthlyPlazo.value < 1) {
-        return Notify.create({ type: 'negative', message: 'Indique cuántos meses se repetirá la tarea (Plazo)' });
-      }
-    } else {
-      // Si no es mensual, la fecha de entrega es obligatoria
-      if (!date.value) {
-        return Notify.create({ type: 'negative', message: 'Seleccione una fecha de entrega' });
-      }
-    }
-
+    if (!areaId) return Notify.create({ type: 'negative', message: 'No tienes área asignada' });
+    if (!name.value || !description.value || !workers.value.length) return Notify.create({ type: 'negative', message: 'Complete los campos obligatorios' });
+    
     loading.value = true;
-
-    // 3. Construcción del FormData
     const formData = new FormData();
-    formData.append("name", name.value.trim());
-    formData.append("description", description.value.trim());
+    formData.append("name", name.value);
+    formData.append("description", description.value);
     formData.append("area_id", areaId);
     formData.append("tribute_id", userId);
     formData.append("isMonthly", isMonthly.value);
-    
-    // Convertir array de trabajadores a string JSON para el backend
     formData.append("workers", JSON.stringify(workers.value));
-    
-    // Definir líder: si hay varios usa el seleccionado, si hay uno solo usa ese
-    const taskLeader = workers.value.length > 1 ? leader.value : workers.value[0];
-    formData.append("leader", taskLeader);
+    formData.append("leader", workers.value.length > 1 ? leader.value : workers.value[0]);
 
-    // 4. Lógica condicional de envío (Mensual vs Única)
     if (isMonthly.value) {
       formData.append("monthlyDay", Number(monthlyDay.value));
-      formData.append("monthlyPlazo", Number(monthlyPlazo.value)); 
+      formData.append("monthlyPlazo", Number(monthlyPlazo.value));
     } else {
       formData.append("delivery_date", date.value);
     }
+    if (crearArchivo.value) formData.append("file", crearArchivo.value);
 
-    // Adjuntar archivo si existe
-    if (crearArchivo.value) {
-      formData.append("file", crearArchivo.value); 
-    }
-
-    // 5. Petición al servidor
     await postTasks(formData);
-    
-    // 6. Respuesta exitosa
-    Notify.create({ 
-      type: 'positive', 
-      message: 'Tarea creada con éxito' 
-    });
-    
+    Notify.create({ type: 'positive', message: 'Tarea creada con éxito' });
     showCreate.value = false;
     limpiarFormulario();
-    await obtenerTareas(); // Recargar la tabla
-
+    await obtenerTareas();
   } catch (error) {
-    console.error("❌ Error al crear la tarea:", error);
-    
-    // Capturar el mensaje de error que viene del backend o uno por defecto
-    const mensajeError = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         "Error interno al procesar la tarea";
-                         
-    Notify.create({ 
-      type: 'negative', 
-      message: mensajeError 
-    });
+    Notify.create({ type: 'negative', message: error.response?.data?.error || "Error al crear tarea" });
   } finally {
     loading.value = false;
   }
 };
 
-// Función auxiliar para limpiar el formulario
 const limpiarFormulario = () => {
-  name.value = '';
-  description.value = '';
-  date.value = '';
-  workers.value = [];
-  leader.value = null;
-  crearArchivo.value = null;
-  crearLink.value = '';
-  isMonthly.value = false;
-  monthlyDay.value = null;
-  monthlyPlazo.value = null;
+  name.value = ''; description.value = ''; date.value = ''; workers.value = [];
+  leader.value = null; crearArchivo.value = null; isMonthly.value = false;
+  monthlyDay.value = null; monthlyPlazo.value = null;
 };
 
 const abrirEditar = (task) => {
-  editId.value = task._id; 
-  editName.value = task.name; 
-  editDescription.value = task.description
-  editDate.value = task.delivery_date?.split('T')[0]
-  editWorkers.value = Array.isArray(task.workers) ? task.workers.map(w => w._id) : []
-  editState.value = task.stateTask
-  showEdit.value = true
+  editId.value = task._id; editName.value = task.name; editDescription.value = task.description;
+  editDate.value = task.delivery_date?.split('T')[0];
+  editWorkers.value = task.workers?.map(w => w._id) || [];
+  editState.value = task.stateTask;
+  showEdit.value = true;
 }
 
-const verDetalles = (task) => { 
-  console.log("Datos de la tarea seleccionada:", task);
-  selectedTask.value = task; 
-  showDetails.value = true 
-}
+const verDetalles = (task) => { selectedTask.value = task; showDetails.value = true }
 
 const actualizarTarea = async () => {
   try {
     loading.value = true;
-    
-    // Obtenemos el estado que tenía antes de editar
-    const estadoPrevio = tasks.value.find(t => t._id === editId.value)?.stateTask;
-
-    const payload = {
-      name: editName.value,
-      description: editDescription.value,
-      workers: editWorkers.value,
-      delivery_date: editDate.value,
-      stateTask: editState.value,
-      estadoAnterior: estadoPrevio // <--- El backend lo usará para el correo
-    };
-
-    // Llamada al servicio
-    await putTasks(editId.value, payload);
-
-    Notify.create({ type: 'positive', message: 'Tarea actualizada correctamente' });
+    await putTasks(editId.value, {
+      name: editName.value, description: editDescription.value,
+      workers: editWorkers.value, delivery_date: editDate.value, stateTask: editState.value
+    });
+    Notify.create({ type: 'positive', message: 'Tarea actualizada' });
     showEdit.value = false;
     await obtenerTareas();
-
   } catch (error) {
-    Notify.create({ type: 'negative', message: error.response?.data?.error || "Error al actualizar" });
+    Notify.create({ type: 'negative', message: 'Error al actualizar' });
   } finally {
     loading.value = false;
   }
@@ -780,113 +628,47 @@ const actualizarTarea = async () => {
 
 const obtenerTareas = async () => {
   try {
-    let endpoint = ''
-    if (rol === 1 || rol === 2) {
-      endpoint = `/tasks/seeTasks`
-    } else if (rol === 3) {
-      endpoint = `/tasks/byWorker/${userId}`
-    }
-
+    loading.value = true;
+    const endpoint = (rol === 1 || rol === 2) ? `/tasks/seeTasks` : `/tasks/byWorker/${userId}`
     const res = await api.get(endpoint)
     let lista = Array.isArray(res.data) ? res.data : []
-
-    // FILTRO PARA ADMINISTRADOR (ROL 2)
     if (rol === 2) {
       lista = lista.filter(t => {
         const tAreaId = t.area_id?._id || t.area_id;
-        return tAreaId && String(tAreaId) === String(areaId);
+        return String(tAreaId) === String(areaId);
       });
     }
-
-    // Mapeamos para agregar el índice visual
-    tasks.value = lista.map((t, i) => ({ 
-      ...t, 
-      index: i + 1,
-      areaName: t.area_id?.name || 'Sin área'
-    }))
-
-  } catch (error) {
-    console.error("Error al obtener tareas:", error)
-    Notify.create({
-      type: 'negative',
-      message: 'No se pudieron cargar las tareas'
-    })
+    tasks.value = lista.map((t, i) => ({ ...t, index: i + 1 }))
+  } finally {
+    loading.value = false;
   }
 }
 
 const obtenerTrabajadores = async () => {
   try {
     const res = await api.get(`/users/seeUsers`)
-    const todosLosUsuarios = res.data
-    
-    const miAreaIdActual = areaId; // 
-    const miRolActual = Number(localStorage.getItem('rol'));
-
-    console.log("🔍 DEBUG -> Mi Rol:", miRolActual, "| Mi AreaID:", miAreaIdActual);
-
-    if (miRolActual === 1) {
-      workersList.value = todosLosUsuarios.filter(u => Number(u.rol) === 3);
-      console.log(`✅ SuperAdmin: ${workersList.value.length} trabajadores cargados`);
-    } else if (miRolActual === 2) {
-      if (!miAreaIdActual || miAreaIdActual === 'undefined' || miAreaIdActual === 'null') {
-        console.error("❌ ALERTA: El Admin no tiene AreaID");
-        Notify.create({
-          type: 'warning',
-          message: 'Tu usuario no tiene un área asignada. Contacta al administrador.',
-          timeout: 5000
-        });
-        workersList.value = [];
-        return;
-      }
-
-      workersList.value = todosLosUsuarios.filter(u => {
-        const userArea = u.area_id || u.areaId; 
-        const userAreaId = userArea?._id ? String(userArea._id) : String(userArea);
-        return Number(u.rol) === 3 && userAreaId === String(miAreaIdActual);
-      });
-      
-      console.log(`Admin de Área: ${workersList.value.length} trabajadores de área ${miAreaIdActual}`);
-    }
-  } catch (error) {
-    console.error("Error al obtener trabajadores:", error)
-    Notify.create({
-      type: 'negative',
-      message: 'Error al cargar trabajadores'
-    })
-  }
+    workersList.value = res.data.filter(u => {
+      const uArea = u.area_id || u.areaId;
+      const uAreaId = uArea?._id || uArea;
+      return Number(u.rol) === 3 && (rol === 1 || String(uAreaId) === String(areaId));
+    });
+  } catch (error) {}
 }
 
-//  VALIDACIÓN CRÍTICA AL MONTAR EL COMPONENTE
 onMounted(() => {
-  console.log(" Montando componente Task.vue...");
-  console.log(" Datos en localStorage:");
-  console.log(" userId:", userId);
-  console.log(" rol:", rol);
-  console.log(" areaId:", areaId);
-
-  // Verificar que areaId existe y no es "undefined"
-  if (!areaId || areaId === 'undefined' || areaId === 'null') {
-    console.error('❌ ERROR CRÍTICO: No hay areaId válido en localStorage');
-    
-    Notify.create({
-      type: 'negative',
-      message: 'Error: No se ha asignado un área a tu usuario. Algunas funcionalidades estarán deshabilitadas. Contacta al administrador.',
-      timeout: 8000,
-      position: 'top'
-    });
-    
-    // Aún así cargamos tareas y trabajadores para que el componente no quede vacío
-    obtenerTareas();
-    obtenerTrabajadores();
-    return;
-  }
-  
-  console.log('✅ areaId válido detectado');
   obtenerTareas();
   obtenerTrabajadores();
 })
 </script>
 
 <style scoped>
-@import url(../style/Task.css);
+.dashed-border {
+  border: 2px dashed #ccc;
+  transition: all 0.3s ease;
+}
+
+.dashed-border:hover {
+  border-color: var(--q-primary);
+  background-color: #f0f4f0 !important;
+}
 </style>

@@ -1,75 +1,74 @@
 <template>
   <Layouts_main>
-    <div class="header">
-      <div>
-        <h1 :style="{ color: 'var(--twoColor--)' }" style="font-weight: 600;">Notificaciones</h1>
+    <div class="row items-center q-mb-lg q-col-gutter-sm">
+      <div class="col-12 col-md">
+        <h1 class="text-h5 text-weight-bold text-primary q-my-none">Centro de Notificaciones</h1>
+        <div class="text-caption text-grey-7">Mantente al día con las actualizaciones de tus tareas.</div>
       </div>
-
-      <div class="contem-mi-info">
-        <div class="mInfo1">
-          <b class="tInfo">Área: {{ user.area }}</b>
-        </div>
-        <div class="mInfo2">
-          <b class="tInfo">Rol: {{ user.rol }}</b>
-        </div>
-      </div>
-    </div>
-
-    <div class="toolbar-container">
-      <q-input 
-        v-model="filtroNombre" 
-        dense 
-        outlined 
-        placeholder="Buscar por nombre de tarea..." 
-        class="search-input"
-        bg-color="white"
-      >
-        <template v-slot:append>
-          <q-icon name="search" />
-        </template>
-      </q-input>
-
-      <div class="actions-group">
+      <div class="col-12 col-md-auto">
         <q-btn
+          unelevated
+          rounded
           dense
-          flat
           :loading="loading"
-          icon="archive"
-          label="Historial"
-          class="btn-action btn-download"
+          icon="download"
+          label="Informe PDF"
+          color="primary"
+          class="q-px-md"
           @click="generarInforme"
         />
-
-<!--         <q-btn
-          dense
-          flat
-          :loading="loadingDelete"
-          icon="delete"
-          label="Eliminar"
-          class="btn-action btn-delete"
-          @click="eliminarNotificacioness"
-        /> -->
       </div>
     </div>
 
-    <div class="alerts" v-if="notificationsFiltradas.length">
+    <q-card flat bordered class="q-mb-md bg-grey-1">
+      <q-card-section class="q-py-sm">
+        <q-input 
+          v-model="filtroNombre" 
+          dense 
+          outlined 
+          placeholder="Filtrar por actividad..." 
+          bg-color="white"
+          class="compact-search"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" size="20px" />
+          </template>
+        </q-input>
+      </q-card-section>
+    </q-card>
+
+    <div v-if="notificationsFiltradas.length" class="row q-col-gutter-md">
       <div
         v-for="n in notificationsFiltradas"
         :key="n._id"
-        class="alertCard static-card"
-        :style="getCardStyle(n)"
+        class="col-12 col-md-6"
       >
-        <h4>{{ n.title }}</h4>
-        <small class="date">{{ new Date(n.createdAt).toLocaleString() }}</small>
-        <h3>{{ n.nameTask }}</h3>
-        
-        <p>{{ processDescription(n.description) }}</p>
+        <q-card flat bordered class="notification-item transition-all">
+          <q-item dense class="q-py-md">
+            <q-item-section avatar top>
+              <q-avatar size="32px" :style="{ backgroundColor: getBadgeColor(n) }" text-color="white" icon="notifications" />
+            </q-item-section>
+
+            <q-item-section>
+              <q-item-label class="text-weight-bold text-primary" style="font-size: 13px;">{{ n.title }}</q-item-label>
+              <q-item-label class="text-weight-medium q-mt-xs" lines="1">{{ n.nameTask }}</q-item-label>
+              <q-item-label caption lines="2" class="q-mt-xs text-grey-8">{{ processDescription(n.description) }}</q-item-label>
+            </q-item-section>
+
+            <q-item-section side top>
+              <q-item-label caption class="text-weight-bold" style="font-size: 10px;">
+                {{ formatNotifyDate(n.createdAt) }}
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-card>
       </div>
     </div>
 
-    <p v-else class="noAlerts">
-      {{ notifications.length > 0 ? 'No hay notificaciones con los filtros aplicados' : 'No hay notificaciones' }}
-    </p>
+    <div v-else class="column flex-center q-pa-xl text-grey-5 bg-white rounded-borders border-grey-3">
+      <q-icon name="notifications_none" size="48px" />
+      <div class="text-subtitle2 q-mt-sm">Sin actualizaciones pendientes</div>
+    </div>
 
   </Layouts_main>
 </template>
@@ -78,39 +77,31 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import Layouts_main from "../layouts/layouts_main.vue";
 import { Notify } from "quasar";
-import { getUserById, getNotifications, deleteNotifications } from "../services/servicesComponent";
+import { getUserById, getNotifications } from "../services/servicesComponent";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAdminStore } from "../store/administrador.js";
 
 const adminStore = useAdminStore();
 
-// Estados
-const filtroNombre = ref(""); // Nuevo filtro de búsqueda
-const filtroEstado = ref(null);
-const filtroTipo = ref(null);
+const filtroNombre = ref(""); 
 const loading = ref(false);
-const loadingDelete = ref(false);
 const notifications = ref([]);
 const user = ref({ rol: "", area: "" });
-const defaultColor = "#4CAF50";
 let pollingInterval = null;
 
 const roles = { 1: "Super Admin", 2: "Administrador", 3: "Usuario" };
 
 const stateMap = {
-  1: { label: "En Desarrollo", color: "blue" },
-  2: { label: "En Revisión", color: "orange" },
-  3: { label: "Completada", color: "green" },
-  4: { label: "Rechazada", color: "red" },
-  5: { label: "Vencida", color: "grey" }
+  1: { label: "En Desarrollo", color: "#2196F3" },
+  2: { label: "En Revisión", color: "#FF9800" },
+  3: { label: "Completada", color: "#39A900" },
+  4: { label: "Rechazada", color: "#F44336" },
+  5: { label: "Vencida", color: "#9E9E9E" }
 };
 
-// LÓGICA DE FILTRADO COMPUESTA
 const notificationsFiltradas = computed(() => {
   let result = notifications.value;
-
-  // 1. Filtro por Nombre de Tarea (Texto libre)
   if (filtroNombre.value.trim() !== "") {
     const search = filtroNombre.value.toLowerCase();
     result = result.filter(n => 
@@ -118,39 +109,30 @@ const notificationsFiltradas = computed(() => {
       n.title?.toLowerCase().includes(search)
     );
   }
-
-  // 2. Filtrar por estado (Buscando el ID numérico en la descripción)
-  if (filtroEstado.value && filtroEstado.value.value !== null) {
-    result = result.filter(n => {
-      const matches = n.description.match(/\d+/g);
-      const lastState = matches ? Number(matches[matches.length - 1]) : null;
-      return lastState === filtroEstado.value.value;
-    });
-  }
-
-  // 3. Filtrar por tipo (Quién hizo el cambio)
-  if (filtroTipo.value && filtroTipo.value.value !== null) {
-    result = result.filter(n => {
-      if (filtroTipo.value.value === "cambio_propio") {
-        return n.title === "Has cambiado el estado de la tarea" || n.title === "Has creado una nueva tarea";
-      } else {
-        return n.title === "Han cambiado el estado de la tarea" || n.title === "Te han asignado una nueva tarea";
-      }
-    });
-  }
-
   return result;
 });
 
-const getCardStyle = (n) => {
+const getBadgeColor = (n) => {
   const matches = n.description.match(/\d+/g);
-  const lastState = matches ? matches[matches.length - 1] : null;
-  const color = stateMap[Number(lastState)]?.color || defaultColor;
+  const lastState = matches ? Number(matches[matches.length - 1]) : null;
   
-  return {
-    borderLeft: `8px solid ${color}`,
-    borderLeftStyle: 'solid'
-  };
+  if (lastState && stateMap[lastState]) {
+    return stateMap[lastState].color;
+  }
+  
+  // Colores por palabras clave si no hay ID numérico
+  const title = n.title.toLowerCase();
+  if (title.includes('completada') || title.includes('aprobada')) return '#39A900';
+  if (title.includes('rechazada')) return '#F44336';
+  if (title.includes('revisión')) return '#FF9800';
+  if (title.includes('asignada') || title.includes('creada')) return '#2196F3';
+  
+  return '#39A900'; // Default SENA Green
+};
+
+const formatNotifyDate = (date) => {
+  const d = new Date(date);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 const processDescription = (desc) => {
@@ -182,109 +164,64 @@ onMounted(async () => {
     const id = localStorage.getItem("userId");
     if (!id) return;
     const resUser = await getUserById(id);
-    user.value.rol = roles[resUser.rol] || "Sin rol";
-    user.value.area = resUser.rol === 2 ? (resUser.areaAdminName || "Sin área") : (resUser.areaName || "Sin área");
+    user.value.area = resUser.rol === 2 ? (resUser.areaAdminName || "Área General") : (resUser.areaName || "Área General");
+    user.value.rol = roles[resUser.rol] || "Usuario";
     await cargarNotificaciones();
     pollingInterval = setInterval(cargarNotificaciones, 20000);
-  } catch (error) {
-    console.error(error);
-  }
+  } catch (error) {}
 });
 
-onUnmounted(() => { 
-  if (pollingInterval) clearInterval(pollingInterval); 
-});
+onUnmounted(() => { if (pollingInterval) clearInterval(pollingInterval); });
 
 const generarInforme = () => {
   loading.value = true;
   const dataParaInforme = notificationsFiltradas.value;
-  
   if (!dataParaInforme.length) {
     loading.value = false;
-    Notify.create({ type: "warning", message: "No hay notificaciones para exportar" });
-    return;
+    return Notify.create({ type: "warning", message: "No hay datos para exportar" });
   }
 
   const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Informe de Notificaciones", 14, 15);
-  doc.setFontSize(10);
-  doc.text(`Área: ${user.value.area}`, 14, 22);
-  doc.text(`Rol: ${user.value.rol}`, 14, 28);
-  doc.text(`Fecha: ${new Date().toLocaleString()}`, 14, 34);
-
+  doc.setFontSize(16);
+  doc.setTextColor(57, 169, 0);
+  doc.text("Historial de Actividades - ODT", 14, 15);
+  
   const tableData = dataParaInforme.map(n => [
     n.title,
     n.nameTask,
     processDescription(n.description),
-    new Date(n.createdAt).toLocaleString()
+    formatNotifyDate(n.createdAt)
   ]);
 
   autoTable(doc, {
-    startY: 40,
-    head: [["Título", "Tarea", "Descripción", "Fecha"]],
+    startY: 25,
+    head: [["Acción", "Tarea", "Descripción", "Fecha"]],
     body: tableData,
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [76, 175, 80] }
+    headStyles: { fillColor: [57, 169, 0] },
+    styles: { fontSize: 8 }
   });
   
   loading.value = false;
-  doc.save("informe_notificaciones.pdf");
+  doc.save(`Notificaciones_ODT.pdf`);
 };
-
-/* const eliminarNotificacioness = async () => {
-  if (!notifications.value.length) {
-    Notify.create({ type: "warning", message: "No hay notificaciones para eliminar" });
-    return;
-  }
-  try {
-    loadingDelete.value = true;
-    const userId = localStorage.getItem("userId");
-    const result = await deleteNotifications({ userId });
-    notifications.value = [];
-    adminStore.countNotifications = 0;
-    adminStore.totalLeidoLocal = 0; 
-    Notify.create({ type: "positive", message: result.message || "Notificaciones eliminadas correctamente" });
-  } catch (error) {
-    Notify.create({ type: "negative", message: "Error al eliminar las notificaciones" });
-  } finally {
-    loadingDelete.value = false;
-  }
-}; */
 </script>
 
 <style scoped>
-@import url("../style/notify.css");
-
-/* Estilos para la nueva barra de herramientas */
-.toolbar-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2%;
-  margin-bottom: 20px;
-  gap: 20px;
+.notification-item {
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.search-input {
-  flex: 1;
-  max-width: 400px;
+.notification-item:hover {
+  background-color: #fbfcfa;
+  border-color: var(--q-primary);
 }
 
-.actions-group {
-  display: flex;
-  gap: 10px;
+.compact-search {
+  max-width: 300px;
 }
 
-/* Deshabilitar interacción visual de botón en las tarjetas */
-.static-card {
-  cursor: default !important;
-  transition: transform 0.2s ease;
-}
-
-/* Opcional: una pequeña elevación al pasar el mouse pero sin que parezca un botón */
-.static-card:hover {
-  transform: none !important;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+.transition-all {
+  transition: all 0.3s ease;
 }
 </style>
