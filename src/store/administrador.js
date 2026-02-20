@@ -27,8 +27,6 @@ export const useAdminStore = defineStore('administrador', {
       try {
         const data = await loginUser(credentials);
         
-        console.log("Respuesta del login:", data); 
-        
         if (!data || !data.token || !data.user) {
           throw new Error('Respuesta del servidor incompleta');
         }
@@ -49,9 +47,6 @@ export const useAdminStore = defineStore('administrador', {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('rol', data.user.rol);
         localStorage.setItem('areaId', areaIdValue || '');
-        
-        console.log("✅ Store: areaId guardado:", areaIdValue);
-        console.log("✅ Verificación inmediata:", localStorage.getItem('areaId'));
         
         this.loading = false;
         return data;

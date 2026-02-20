@@ -89,17 +89,12 @@ export async function resetPassword(userId, newPassword) {
 
 // LOGIN
 export async function loginUser(credentials) {
-  try {
-    console.log("🔐 Enviando credenciales al backend:", credentials);
-    
+  try {   
     // Enviar directamente el objeto con gmail y password
     const res = await api.post("/users/login", { 
       gmail: credentials.gmail, 
       password: credentials.password 
     });
-    
-    console.log("✅ Respuesta del backend:", res.data);
-    console.log("👤 Usuario recibido:", res.data.user);
 
     // Guardar datos básicos
     localStorage.setItem("user", JSON.stringify(res.data.user));
@@ -115,19 +110,12 @@ export async function loginUser(credentials) {
         : res.data.user.areaId;
       
       localStorage.setItem("areaId", areaIdValue);
-      console.log("✅ areaId guardado en localStorage:", areaIdValue);
     } else {
       console.warn("⚠️ Usuario sin areaId en la respuesta del backend");
       console.warn("⚠️ Esto puede causar problemas al crear tareas");
       localStorage.removeItem("areaId");
     }
 
-    // ✅ Verificación final
-    console.log("📊 Datos guardados en localStorage:");
-    console.log("   - userId:", localStorage.getItem("userId"));
-    console.log("   - rol:", localStorage.getItem("rol"));
-    console.log("   - areaId:", localStorage.getItem("areaId"));
-    console.log("   - token:", localStorage.getItem("token") ? "✅" : "❌");
 
     return res.data;
     
@@ -269,7 +257,6 @@ export async function getArea() {
 
 export async function putArea(id, areaData) {
   try {
-    console.log(`📤 PUT /areas/${id}`)
     console.log('📋 Datos a enviar:', areaData)
     
     const res = await api.put(`/areas/${id}`, areaData, getAuthHeaders());
